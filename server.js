@@ -149,6 +149,19 @@ app.use(
   })
 );
 
+/* =========================================================
+   ROOT + HEALTH CHECK (Render)
+   ========================================================= */
+
+app.get("/", (req, res) => {
+  res.send("Foopy API is running 🚀");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+
 /* ---------- CONSTANTS ---------- */
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
