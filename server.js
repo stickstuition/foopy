@@ -71,7 +71,8 @@ function isProfane(text) {
    ========================================================= */
 
 import teams from "./engine/players.js";
-import { generateQuestion, validateAnswer } from "../Foopy/foopy/src/engine/engine.js";
+import { generateQuestion, validateAnswer } from "./engine/engine.js";
+
 
 import nodemailer from "nodemailer";
 
