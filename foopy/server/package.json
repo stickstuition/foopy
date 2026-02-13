@@ -1,0 +1,9 @@
+{
+  "name": "foopy-server",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  }
+}
