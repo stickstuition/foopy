@@ -109,8 +109,16 @@ const TEAM_CODE_TO_BADGE_ID = {
 
 
 const app = express();
+app.set("trust proxy", 1);
+
+/**
+ * ✅ REQUIRED for Render / HTTPS / secure cookies
+ */
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 const db = new Database("foopy.sqlite");
+
 
 /*
   One live socket per user.
@@ -310,8 +318,8 @@ function getWeekKey(ts = Date.now()) {
 function setSessionCookie(res, token) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",               // ✅ REQUIRED
+    secure: true,                   // ✅ REQUIRED on HTTPS
     maxAge: THIRTY_DAYS_MS
   });
 }
@@ -319,10 +327,11 @@ function setSessionCookie(res, token) {
 function clearSessionCookie(res) {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production"
+    sameSite: "none",
+    secure: true
   });
 }
+
 
 
 function getSessionFromToken(token) {
