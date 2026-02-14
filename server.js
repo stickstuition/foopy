@@ -110,6 +110,10 @@ const TEAM_CODE_TO_BADGE_ID = {
 
 
 const app = express();
+app.get("/", (req, res) => {
+  res.status(200).send("Foopy backend running");
+});
+
 app.set("trust proxy", 1);
 
 /**
