@@ -169,7 +169,7 @@ app.use(
 );
 
 // ✅ Explicitly handle preflight
-app.options("*", cors());
+app.options("/", cors());
 
 
 
