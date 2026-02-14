@@ -136,31 +136,41 @@ app.use(cookieParser());
 
 /* ---------- CORS ---------- */
 
-const ALLOWED_ORIGINS = process.env.FRONTEND_URL
-  ? [process.env.FRONTEND_URL]
-  : ["http://localhost:3000", "http://localhost:5173"];
+const ALLOWED_ORIGINS = (
+  process.env.FRONTEND_URLS ||
+  [
+    "https://www.foopy.com.au",
+    "https://foopy.com.au",
+    "https://foopy-server.onrender.com",
+    "http://localhost:5173"
+  ].join(",")
+)
+  .split(",")
+  .map(o => o.trim());
+
 
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin(origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (origin === process.env.FRONTEND_URL) {
+      if (ALLOWED_ORIGINS.includes(origin)) {
         return callback(null, true);
       }
 
-      console.log("Blocked by CORS:", origin);
-      return callback(null, false);
+      console.error("❌ CORS blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
   })
 );
 
-// IMPORTANT: explicitly handle preflight
+// ✅ Explicitly handle preflight
 app.options("*", cors());
+
 
 
 /* =========================================================
