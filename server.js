@@ -148,6 +148,7 @@ const ALLOWED_ORIGINS = (
   .split(",")
   .map(o => o.trim());
 
+  console.log("ALLOWED_ORIGINS AT BOOT =", ALLOWED_ORIGINS);
 
 
 app.use(
