@@ -153,7 +153,7 @@ const ALLOWED_ORIGINS = (
 app.use(
   cors({
     origin(origin, callback) {
-      // ✅ Always allow preflight & server-to-server
+      // Allow server-to-server & preflight
       if (!origin) return callback(null, true);
 
       if (ALLOWED_ORIGINS.includes(origin)) {
@@ -161,19 +161,13 @@ app.use(
       }
 
       console.warn("❌ CORS blocked origin:", origin);
-      return callback(null, false); // ❗ DO NOT throw
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
   })
 );
-
-// ✅ Explicit preflight handler (no origin logic)
-app.options("/*", cors({
-  origin: true,
-  credentials: true
-}));
 
 
 
