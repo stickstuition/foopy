@@ -5,7 +5,10 @@ import { BADGES } from "../engine/badges";
 import ProfileModal from "../components/profile/ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 
-const isMobile = window.innerWidth <= 480;
+import useIsMobile from "../hooks/useIsMobile";
+
+const isMobile = useIsMobile();
+
 
 /* ========================================================= */
 
