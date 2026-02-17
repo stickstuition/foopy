@@ -1,7 +1,5 @@
+import { useEffect, useState } from "react";
 import { playDownClick, playUpClick } from "../utils/uiSounds";
-
-const isMobile = window.innerWidth <= 768;
-
 
 export default function GamePanel({
   children,
@@ -12,22 +10,34 @@ export default function GamePanel({
   onToggleSound,
   onOpenSettings,
   hideHud = false,
-  variant = "default" // 👈 add this
+  variant = "default"
 }) {
   const isAuth = variant === "auth";
 
-return (
-<div
-  id="game-panel-root"
-  style={{
-    ...panelWrap,
-    ...(isMobile && mobilePanelOverride),
-    background: isAuth ? "#0b5fa3" : "#ffffff"
-  }}
->
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth <= 480
+  );
 
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 480);
+    }
 
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
+  return (
+    <div
+      id="game-panel-root"
+      style={{
+        ...panelWrap,
+        ...(isMobile ? mobilePanelOverride : {}),
+        background: isAuth ? "#0b5fa3" : "#ffffff",
+        transform: isMobile ? "scale(0.88)" : "none",
+        transformOrigin: "top center"
+      }}
+    >
       {/* HUD */}
       {!hideHud && (
         <div style={hudLayer}>
@@ -99,6 +109,15 @@ const panelWrap = {
   overflow: "hidden"
 };
 
+const mobilePanelOverride = {
+  width: "100vw",
+  maxWidth: "100vw",
+  height: "100svh",
+  maxHeight: "100svh",
+  borderRadius: 0,
+  boxShadow: "none"
+};
+
 const hudLayer = {
   position: "absolute",
   top: 16,
@@ -131,15 +150,6 @@ const contentLayer = {
   height: "100%",
   position: "relative",
   zIndex: 1,
-  overflowY: "auto"
-};
-
-
-const mobilePanelOverride = {
-  width: "100vw",
-  maxWidth: "100vw",
-  height: "100svh",
-  maxHeight: "100svh",
-  borderRadius: 0,
-  boxShadow: "none"
+  overflowY: "auto",
+  WebkitOverflowScrolling: "touch"
 };
