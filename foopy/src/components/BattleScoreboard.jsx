@@ -1,6 +1,9 @@
 // foopy/src/components/BattleScoreboard.jsx
 import { BADGES } from "../engine/badges";
 
+const isMobile = window.innerWidth <= 768;
+
+
 export default function BattleScoreboard({ me, scores, profiles, singlePlayer, delta }) {
   const opponentRole = me === "host" ? "guest" : "host";
 
@@ -74,10 +77,15 @@ function Row({ label, score, badgeIcon, emphasis, delta = null }) {
 
 const wrap = {
   position: "absolute",
-  left: 24,
-  bottom: 24,
-  width: 220
+  left: isMobile ? "50%" : 24,
+  bottom: isMobile ? "auto" : 24,
+  top: isMobile ? 14 : "auto",
+  transform: isMobile ? "translateX(-50%)" : "none",
+  width: isMobile ? "calc(100% - 24px)" : 220,
+  maxWidth: 360,
+  zIndex: 20
 };
+
 
 const row = {
   display: "flex",

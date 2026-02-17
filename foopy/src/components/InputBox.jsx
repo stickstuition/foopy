@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import Autocomplete from "./Autocomplete";
 
+const isMobile = window.innerWidth <= 768;
+
+
 export default function InputBox({
   value,
   onChange,
@@ -59,15 +62,19 @@ export default function InputBox({
   }, [value, suggestions, onSubmit, onSelectSuggestion, onSkip]);
 
   return (
-    <div
-      style={{
-        width: 360,
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        position: "relative"
-      }}
-    >
+<div
+  style={{
+    width: isMobile ? "100%" : 360,
+    maxWidth: 360,
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
+    paddingLeft: isMobile ? 12 : 0,
+    paddingRight: isMobile ? 12 : 0
+  }}
+>
+
       <input
         ref={inputRef}
         value={value}
@@ -140,7 +147,7 @@ export default function InputBox({
 const buttonStyle = {
   marginTop: 14,
   width: "100%",
-  height: 48,
+height: isMobile ? 44 : 48,
   fontSize: 16,
   borderRadius: 10,
   fontWeight: 700,
@@ -152,7 +159,7 @@ const buttonStyle = {
 const skipStyle = {
   marginTop: 8,
   width: "100%",
-  height: 42,
+height: isMobile ? 40 : 42,
   fontSize: 14,
   borderRadius: 10,
   cursor: "pointer",

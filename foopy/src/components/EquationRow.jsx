@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import PlayerCard from "./PlayerCard";
 import UnknownPlayerCard from "./UnknownPlayerCard";
 
+const isMobile = window.innerWidth <= 768;
+
+
 export default function EquationRow({
   players,
   operator,
@@ -34,33 +37,37 @@ export default function EquationRow({
   }, []);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        gap: "16px",
-        paddingTop: 60,
-        marginBottom: "20px"
-      }}
-    >
+<div
+  style={{
+    display: "flex",
+    flexWrap: "wrap",                 // 👈 key
+    justifyContent: "center",
+    alignItems: "center",
+    gap: isMobile ? 8 : 16,
+    paddingTop: isMobile ? 20 : 60,
+    marginBottom: "20px"
+  }}
+>
+
       {safePlayers.map((p, index) => (
-        <div
-          key={`${p.name}-${index}`}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "10px"
-          }}
-        >
+<div
+  key={`${p.name}-${index}`}
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: isMobile ? 6 : 10,
+    transform: isMobile ? "scale(0.85)" : "scale(1)"
+  }}
+>
+
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <PlayerCard image={p.image} />
 
             {index < safePlayers.length - 1 && (
               <span
                 style={{
-                  fontSize: "44px",
+                  fontSize: isMobile ? 28 : 44,
                   fontWeight: 900,
                   lineHeight: 1
                 }}
@@ -89,17 +96,19 @@ export default function EquationRow({
           padding: "0 8px"
         }}
       >
-        <span style={{ fontSize: "44px", fontWeight: 900 }}>=</span>
+        <span style={{ fontSize: isMobile ? 28 : 44, fontWeight: 900 }}>=</span>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "10px"
-        }}
-      >
+<div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: isMobile ? 6 : 10,
+    transform: isMobile ? "scale(0.9)" : "scale(1)"
+  }}
+>
+
         {!answerPlayer && <UnknownPlayerCard teamKey={teamKey} />}
 
         {answerPlayer && (

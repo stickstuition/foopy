@@ -3,6 +3,20 @@ import teams from "../engine/players";
 import { useAuth } from "../auth/AuthContext";
 import { playDownClick, playUpClick } from "../utils/uiSounds";
 
+import { useMemo, useState, useEffect } from "react";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 720);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 720);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return isMobile;
+}
+
 
 /* ---------- TEAM LOGOS ---------- */
 
@@ -67,6 +81,7 @@ function withClickSound(onClick, disabled = false) {
 /* ---------- MAIN ---------- */
 
 export default function ModsScreen({ onStart }) {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const favouriteTeam = user?.favouriteTeam;
   const allTeams = Object.keys(teams);
@@ -170,9 +185,17 @@ useEffect(() => {
     });
   }
 
-  return (
-    <div style={styles.page}>
-      <h1 style={styles.title}>Game Options</h1>
+return (
+  <div
+    style={{
+      ...styles.page,
+      height: isMobile ? "auto" : "100%",
+      overflowY: isMobile ? "auto" : "hidden",
+      paddingBottom: isMobile ? 24 : 20
+    }}
+  >
+    <h1 style={styles.title}>Game Options</h1>
+
 
       {/* ---------- TEAMS ---------- */}
       <div style={styles.panel}>
@@ -196,8 +219,16 @@ useEffect(() => {
           </div>
         </div>
 
-        <div style={styles.teamGrid}>
-          {allTeams.map((team) => {
+<div
+  style={{
+    ...styles.teamGrid,
+    gridTemplateColumns: isMobile ? "repeat(4, 1fr)" : "repeat(9, 1fr)",
+    maxHeight: isMobile ? "none" : 122,
+    overflow: isMobile ? "visible" : "hidden"
+  }}
+>
+  {allTeams.map((team) => {
+
             const active = selectedTeams.includes(team);
             return (
               <div
@@ -229,7 +260,16 @@ useEffect(() => {
           <div style={styles.panelHeaderTitle}>Modifications</div>
         </div>
 
-        <div style={styles.modsRow}>
+<div
+  style={{
+    ...styles.modsRow,
+    gridTemplateColumns: isMobile
+      ? "1fr"
+      : "1.3fr 1.3fr 1fr 1fr 1.2fr",
+    gap: isMobile ? 14 : 18
+  }}
+>
+
           <ModColumn
             title="Question Difficulty"
             value={questionDifficulty}
@@ -251,14 +291,23 @@ useEffect(() => {
             onToggle={() => setShowNames((v) => !v)}
           />
 
-          <div style={styles.actionCol}>
-            <div
-              style={{
-                ...styles.multiplierBox,
-                background: getMultiplierColor(multiplierNumber),
-                transform: pulse ? "scale(1.05)" : "scale(1)"
-              }}
-            >
+<div
+  style={{
+    ...styles.actionCol,
+    flexDirection: isMobile ? "row" : "column",
+    alignItems: "center"
+  }}
+>
+
+<div
+  style={{
+    ...styles.multiplierBox,
+    background: getMultiplierColor(multiplierNumber),
+    transform: pulse ? "scale(1.05)" : "scale(1)",
+    width: isMobile ? "60%" : "100%"
+  }}
+>
+
               <div style={styles.multiplierInner}>
                 <div style={styles.coinIcon}>🪙</div>
                 <div>
