@@ -110,15 +110,6 @@ const TEAM_CODE_TO_BADGE_ID = {
 
 
 const app = express();
-app.get("/", (req, res) => {
-  res.status(200).send("Foopy backend running");
-});
-
-app.set("trust proxy", 1);
-
-/**
- * ✅ REQUIRED for Render / HTTPS / secure cookies
- */
 app.set("trust proxy", 1);
 
 const server = http.createServer(app);
@@ -374,25 +365,37 @@ function clearSessionCookie(res) {
 
 function getSessionFromToken(token) {
   if (!token) return null;
-  const tokenHash = sha256(token);
-  const now = Date.now();
 
-  const session = db
-    .prepare(
-      `SELECT user_id, token_hash
-       FROM sessions
-       WHERE token_hash = ? AND expires_at > ?`
-    )
-    .get(tokenHash, now);
+  try {
+    const tokenHash = sha256(token);
+    const now = Date.now();
 
-  return session || null;
+    const session = db
+      .prepare(
+        `SELECT user_id, token_hash
+         FROM sessions
+         WHERE token_hash = ? AND expires_at > ?`
+      )
+      .get(tokenHash, now);
+
+    return session || null;
+  } catch (err) {
+    console.error("[SESSION LOOKUP ERROR]", err);
+    return null;
+  }
 }
 
+
 function getUserIdFromRequest(req) {
+  if (!req.cookies) return null;
+
   const token = req.cookies[COOKIE_NAME];
+  if (!token) return null;
+
   const session = getSessionFromToken(token);
   return session ? session.user_id : null;
 }
+
 
 function getSessionFromCookieHeader(cookieHeader) {
   if (!cookieHeader) return null;
@@ -640,63 +643,68 @@ res.json({
 });
 
 app.get("/auth/me", (req, res) => {
+  const start = Date.now();
+
+  // ✅ HARD FAST EXIT: no cookie, no DB work
+  const token = req.cookies?.[COOKIE_NAME];
+  if (!token) {
+    console.log("[/auth/me] no cookie → 401");
+    return res.status(401).json({ error: "Not logged in" });
+  }
+
+  // ✅ Resolve session
   const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+  if (!userId) {
+    console.log("[/auth/me] invalid/expired session → 401");
+    return res.status(401).json({ error: "Not logged in" });
+  }
 
+  // ✅ DB read ONLY (no writes here)
   const user = db.prepare(`
-SELECT
-  id,
-  username_display,
-  email,
-  games_played,
-  wins,
-  losses,
-  age_range,
-  state,
-  favourite_team,
-  onboarded,
-  coins,
-  badge_equipped,
-  badges_owned
-FROM users
-
+    SELECT
+      id,
+      username_display,
+      email,
+      games_played,
+      wins,
+      losses,
+      age_range,
+      state,
+      favourite_team,
+      onboarded,
+      coins,
+      badge_equipped,
+      badges_owned
+    FROM users
     WHERE id = ?
   `).get(userId);
 
-  if (!user) return res.status(404).json({ error: "User not found" });
-
-  // enforce entitlements once
-  const entitlement = ensureEntitlementBadges(user);
-
-  if (entitlement.changed) {
-    db.prepare(`
-      UPDATE users
-      SET badges_owned = ?
-      WHERE id = ?
-    `).run(JSON.stringify(entitlement.badgesOwned), userId);
-
-    user.badges_owned = JSON.stringify(entitlement.badgesOwned);
+  if (!user) {
+    console.warn("[/auth/me] user not found for id", userId);
+    return res.status(404).json({ error: "User not found" });
   }
 
-res.json({
-  user: {
-    id: user.id,
-    username: safeDisplayUsername(user.username_display),
-    email: user.email,
-    games_played: user.games_played,
-    wins: user.wins ?? 0,
-    losses: user.losses ?? 0,
-    ageRange: user.age_range,
-    state: user.state,
-    favouriteTeam: user.favourite_team,
-    onboarded: !!user.onboarded,
-    coins: user.coins ?? 0,
-    badgeEquipped: user.badge_equipped ?? null,
-    badgesOwned: parseBadgesOwned(user.badges_owned)
-  }
+  console.log("[/auth/me] OK in", Date.now() - start, "ms");
+
+  res.json({
+    user: {
+      id: user.id,
+      username: safeDisplayUsername(user.username_display),
+      email: user.email,
+      games_played: user.games_played,
+      wins: user.wins ?? 0,
+      losses: user.losses ?? 0,
+      ageRange: user.age_range,
+      state: user.state,
+      favouriteTeam: user.favourite_team,
+      onboarded: !!user.onboarded,
+      coins: user.coins ?? 0,
+      badgeEquipped: user.badge_equipped ?? null,
+      badgesOwned: parseBadgesOwned(user.badges_owned)
+    }
+  });
 });
 
-});
 
 
 app.post("/auth/onboarding", (req, res) => {
