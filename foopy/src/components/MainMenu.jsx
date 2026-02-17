@@ -40,6 +40,8 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
 
   if (!user) return null;
 
+const isMobile = window.innerWidth <= 768;
+
   return (
     <div style={menuWrap}>
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
@@ -63,7 +65,7 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
       <div style={menuContent}>
         <img src="/assets/foopy-logo.png" alt="Foopy" style={logoStyle} />
 
-        <div style={grid}>
+        <div style={grid(isMobile)}>
           {/* Timed Mode spans the full top row */}
           <MenuButton label="Timed Mode" onClick={onTimedMode} primary full />
 
@@ -224,16 +226,21 @@ const menuContent = {
 };
 
 const logoStyle = {
-  width: 420,
+  width: "min(420px, 86vw)",
   marginBottom: 20
 };
 
-const grid = {
+
+const grid = (isMobile) => ({
   display: "grid",
-  gridTemplateColumns: "repeat(2, 300px)",
-  gap: 26,
-  justifyContent: "center"
-};
+  gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(2, 300px)",
+  gap: isMobile ? 18 : 26,
+  justifyContent: "center",
+  width: isMobile ? "100%" : "auto",
+  maxWidth: isMobile ? 520 : "none",
+  paddingLeft: isMobile ? 12 : 0,
+  paddingRight: isMobile ? 12 : 0
+});
 
 /* ---------- Logo cloud ---------- */
 
