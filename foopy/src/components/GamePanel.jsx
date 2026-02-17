@@ -1,5 +1,8 @@
 import { playDownClick, playUpClick } from "../utils/uiSounds";
 
+const isMobile = window.innerWidth <= 768;
+
+
 export default function GamePanel({
   children,
   mode,
@@ -18,10 +21,11 @@ return (
   id="game-panel-root"
   style={{
     ...panelWrap,
-    ...(window.innerWidth <= 768 ? mobilePanelOverride : {}),
+    ...(isMobile && mobilePanelOverride),
     background: isAuth ? "#0b5fa3" : "#ffffff"
   }}
 >
+
 
 
       {/* HUD */}
@@ -134,8 +138,8 @@ const contentLayer = {
 const mobilePanelOverride = {
   width: "100vw",
   maxWidth: "100vw",
-  height: "100dvh",          // dynamic viewport for mobile Safari
-  maxHeight: "100dvh",
+  height: "100svh",
+  maxHeight: "100svh",
   borderRadius: 0,
   boxShadow: "none"
 };
