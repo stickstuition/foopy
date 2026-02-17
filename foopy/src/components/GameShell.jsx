@@ -8,7 +8,7 @@ export default function GameShell({ children }) {
       backgroundPosition: "center",
       display: "flex",
       justifyContent: "center",
-      alignItems: "center"
+      alignItems: "stretch"
     }}>
       {children}
     </div>

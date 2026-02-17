@@ -14,13 +14,15 @@ export default function GamePanel({
   const isAuth = variant === "auth";
 
 return (
-  <div
-    id="game-panel-root"
-    style={{
-      ...panelWrap,
-      background: isAuth ? "#0b5fa3" : "#ffffff"
-    }}
-  >
+<div
+  id="game-panel-root"
+  style={{
+    ...panelWrap,
+    ...(window.innerWidth <= 768 ? mobilePanelOverride : {}),
+    background: isAuth ? "#0b5fa3" : "#ffffff"
+  }}
+>
+
 
       {/* HUD */}
       {!hideHud && (
@@ -124,5 +126,16 @@ const contentLayer = {
   width: "100%",
   height: "100%",
   position: "relative",
-  zIndex: 1
+  zIndex: 1,
+  overflowY: "auto"
+};
+
+
+const mobilePanelOverride = {
+  width: "100vw",
+  maxWidth: "100vw",
+  height: "100dvh",          // dynamic viewport for mobile Safari
+  maxHeight: "100dvh",
+  borderRadius: 0,
+  boxShadow: "none"
 };
