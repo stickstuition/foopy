@@ -34,8 +34,6 @@ export default function GamePanel({
         ...panelWrap,
         ...(isMobile ? mobilePanelOverride : {}),
         background: isAuth ? "#0b5fa3" : "#ffffff",
-        transform: isMobile ? "scale(0.88)" : "none",
-        transformOrigin: "top center"
       }}
     >
       {/* HUD */}
