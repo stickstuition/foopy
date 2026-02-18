@@ -4,14 +4,13 @@ import { useAuth } from "../auth/AuthContext";
 import { BADGES } from "../engine/badges";
 import ProfileModal from "../components/profile/ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
-
 import useIsMobile from "../hooks/useIsMobile";
 
 /* ========================================================= */
 
 export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
   const { user } = useAuth();
-  const isMobile = useIsMobile(); // ✅ HOOK MOVED INSIDE COMPONENT
+  const isMobile = useIsMobile();
 
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -20,6 +19,9 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
 
   return (
     <div style={isMobile ? mobileWrap : desktopWrap}>
+      {/* DESKTOP AFL LOGO CLOUD */}
+      {!isMobile && <AFLLogoCloud />}
+
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
 
       <LeaderboardModal
@@ -27,11 +29,20 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
         onClose={() => setLeaderboardOpen(false)}
       />
 
-      {/* HUD */}
-      <div style={hud(isMobile, profileOpen)}>
-        <LeaderboardButton onClick={() => setLeaderboardOpen(true)} />
-        <ProfileButton user={user} onOpen={() => setProfileOpen(true)} />
-      </div>
+      {/* DESKTOP HUD ONLY */}
+      {!isMobile && (
+        <div style={hud(false, profileOpen)}>
+          <LeaderboardButton
+            onClick={() => setLeaderboardOpen(true)}
+            mobile={false}
+          />
+          <ProfileButton
+            user={user}
+            onOpen={() => setProfileOpen(true)}
+            mobile={false}
+          />
+        </div>
+      )}
 
       {/* CONTENT */}
       <div style={content(isMobile)}>
@@ -52,7 +63,7 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
 }
 
 /* =========================================================
-   BUTTONS
+   COMPONENTS
    ========================================================= */
 
 function MenuButton({ label, onClick, red, primary }) {
@@ -83,29 +94,54 @@ function MenuButton({ label, onClick, red, primary }) {
   );
 }
 
-function LeaderboardButton({ onClick }) {
+function LeaderboardButton({ onClick, mobile }) {
   return (
-    <div title="Leaderboards" onClick={onClick} style={hudButton}>
+    <div
+      title="Leaderboards"
+      onClick={onClick}
+      style={hudButton(mobile)}
+    >
       🏆
     </div>
   );
 }
 
-/* =========================================================
-   PROFILE BADGE
-   ========================================================= */
-
-function ProfileButton({ user, onOpen }) {
+function ProfileButton({ user, onOpen, mobile }) {
   const badge = BADGES[user.badgeEquipped] ?? BADGES.stk;
 
   return (
-    <div style={profileButton} onClick={onOpen}>
+    <div
+      onClick={onOpen}
+      style={profileButton(mobile)}
+      title={
+        !mobile
+          ? `${user.username}\n${user.coins ?? 0} coins`
+          : undefined
+      }
+    >
       <img
         src={badge.icon}
         alt=""
         style={{ width: "70%", height: "70%", objectFit: "contain" }}
       />
     </div>
+  );
+}
+
+function AFLLogoCloud() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: 'url("/assets/afl-logo-cloud.png")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        opacity: 0.08,
+        pointerEvents: "none",
+        zIndex: 0
+      }}
+    />
   );
 }
 
@@ -140,7 +176,9 @@ const content = (mobile) => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: mobile ? 22 : 28
+  gap: mobile ? 22 : 28,
+  position: "relative",
+  zIndex: 1
 });
 
 const desktopLogo = {
@@ -185,18 +223,18 @@ const redStyle = {
 
 const hud = (mobile, profileOpen) => ({
   position: "absolute",
-  top: mobile ? 12 : 16,
+  top: mobile ? 12 : 20,
+  right: mobile ? "auto" : 24,
   left: mobile ? 12 : "auto",
-  right: mobile ? "auto" : 20,
   display: "flex",
-  gap: 10,
+  gap: 12,
   zIndex: 10,
   opacity: profileOpen ? 0 : 1
 });
 
-const hudButton = {
-  width: 40,
-  height: 40,
+const hudButton = (mobile) => ({
+  width: mobile ? 40 : 56,
+  height: mobile ? 40 : 56,
   borderRadius: "50%",
   background: "linear-gradient(to bottom, #555, #2f2f2f)",
   color: "#eee",
@@ -204,12 +242,13 @@ const hudButton = {
   alignItems: "center",
   justifyContent: "center",
   cursor: "pointer",
-  boxShadow: "0 3px 10px rgba(0,0,0,0.35)"
-};
+  boxShadow: "0 3px 10px rgba(0,0,0,0.35)",
+  fontSize: mobile ? 18 : 22
+});
 
-const profileButton = {
-  width: 42,
-  height: 42,
+const profileButton = (mobile) => ({
+  width: mobile ? 42 : 60,
+  height: mobile ? 42 : 60,
   borderRadius: "50%",
   background: "linear-gradient(to bottom, #666, #2f2f2f)",
   display: "flex",
@@ -217,4 +256,4 @@ const profileButton = {
   justifyContent: "center",
   overflow: "hidden",
   cursor: "pointer"
-};
+});
