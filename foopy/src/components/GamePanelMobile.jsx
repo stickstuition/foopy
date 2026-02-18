@@ -14,6 +14,9 @@ export default function GamePanelMobile({
 }) {
   const isAuth = variant === "auth";
 
+  console.log("🔥 GamePanelMobile ACTIVE", window.innerWidth);
+
+
 useEffect(() => {
   const html = document.documentElement;
   const body = document.body;
@@ -106,8 +109,10 @@ const mobileWrap = {
   position: "relative",
   overflow: "hidden",
   display: "flex",
-  flexDirection: "column"
+  flexDirection: "column",
+  background: "lime" // 🔴 ADD THIS
 };
+
 
 const mobileHud = {
   position: "absolute",

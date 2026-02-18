@@ -58,6 +58,7 @@ export const BADGES = {
   wbd: teamBadge("wbd", "Western Bulldogs", "/logos/Western_Bulldogs.webp"),
 
 founder: challengeBadge("founder", "Founder", "/badges/founder01.png", "founder"),
+tas: challengeBadge("tas", "Tasmania Devils", "/badges/TasmaniaDevils.webp", "tas"),
 
   // City badges (premium)
   adl: cityBadge("adl", "Adelaide", "/badges/adelaide01.png"),
