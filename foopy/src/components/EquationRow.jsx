@@ -1,8 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import PlayerCard from "./PlayerCard";
 import UnknownPlayerCard from "./UnknownPlayerCard";
-
-const MAX_WIDTH = 1206;
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function EquationRow({
   players,
@@ -12,9 +11,13 @@ export default function EquationRow({
   teamKey,
   answerPlayer
 }) {
-  const safePlayers = Array.isArray(players) ? players : [];
+  const isMobile = useIsMobile();
+  const safePlayers = useMemo(() => (Array.isArray(players) ? players : []), [players]);
 
-  /* ---------- Answer fade animation ---------- */
+  const outerRef = useRef(null);
+  const innerRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
   useEffect(() => {
     const id = "equationrow-answer-fade";
     if (document.getElementById(id)) return;
@@ -30,33 +33,58 @@ export default function EquationRow({
     document.head.appendChild(style);
   }, []);
 
-  // 🔥 SAFARI-SAFE HARD SCALE
-  const zoom =
-    typeof window !== "undefined" && window.innerWidth < MAX_WIDTH
-      ? window.innerWidth / MAX_WIDTH
-      : 1;
+  useLayoutEffect(() => {
+    function recalc() {
+      if (!outerRef.current || !innerRef.current) return;
+
+      const outerW = outerRef.current.getBoundingClientRect().width;
+      const innerW = innerRef.current.scrollWidth;
+
+      if (!innerW) return;
+
+      const next = Math.min(1, outerW / innerW);
+      setScale(next);
+    }
+
+    recalc();
+
+    const ro = new ResizeObserver(() => recalc());
+    if (outerRef.current) ro.observe(outerRef.current);
+    if (innerRef.current) ro.observe(innerRef.current);
+
+    window.addEventListener("resize", recalc);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recalc);
+    };
+  }, []);
+
+  const cardSize = isMobile ? "small" : "large";
+  const opSize = isMobile ? 28 : 44;
+  const gap = isMobile ? 10 : 16;
 
   return (
     <div
+      ref={outerRef}
       style={{
         width: "100%",
         overflow: "hidden",
         display: "flex",
-        justifyContent: "center"
+        justifyContent: "center",
+        paddingTop: isMobile ? 14 : 60,
+        marginBottom: 20
       }}
     >
       <div
+        ref={innerRef}
         style={{
-          width: MAX_WIDTH,
           display: "flex",
           alignItems: "center",
-          gap: 16,
-          paddingTop: 16,
-          marginBottom: 20,
-          zoom // ✅ THIS is the fix
+          gap,
+          transform: `scale(${scale})`,
+          transformOrigin: "center top"
         }}
       >
-        {/* LEFT PLAYERS */}
         {safePlayers.map((p, index) => (
           <div
             key={`${p.name}-${index}`}
@@ -64,67 +92,60 @@ export default function EquationRow({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 10
+              gap: isMobile ? 6 : 10
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <PlayerCard image={p.image} />
+            <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 14 }}>
+              <PlayerCard image={p.image} size={cardSize} />
 
               {index < safePlayers.length - 1 && (
-                <span style={{ fontSize: 44, fontWeight: 900 }}>
+                <span style={{ fontSize: opSize, fontWeight: 900, lineHeight: 1 }}>
                   {operator}
                 </span>
               )}
             </div>
 
-            {showNames && (
-              <div style={{ fontWeight: 800, fontSize: 18 }}>{p.name}</div>
-            )}
-
-            {showNumbers && (
-              <div style={{ fontSize: 14, opacity: 0.7 }}>#{p.number}</div>
-            )}
+            {showNames && <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>{p.name}</div>}
+            {showNumbers && <div style={{ fontSize: 12, opacity: 0.7 }}>#{p.number}</div>}
           </div>
         ))}
 
-        {/* EQUALS */}
         <div
           style={{
-            height: 160,
+            height: isMobile ? 120 : 160,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "0 8px"
+            padding: "0 6px"
           }}
         >
-          <span style={{ fontSize: 44, fontWeight: 900 }}>=</span>
+          <span style={{ fontSize: opSize, fontWeight: 900 }}>=</span>
         </div>
 
-        {/* ANSWER */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 10
+            gap: isMobile ? 6 : 10
           }}
         >
           {!answerPlayer && <UnknownPlayerCard teamKey={teamKey} />}
 
           {answerPlayer && (
             <div style={{ animation: "answerFade 0.6s ease forwards" }}>
-              <PlayerCard image={answerPlayer.image} />
+              <PlayerCard image={answerPlayer.image} size={cardSize} />
             </div>
           )}
 
           {showNames && (
-            <div style={{ fontWeight: 800, fontSize: 18 }}>
+            <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>
               {answerPlayer ? answerPlayer.name : ""}
             </div>
           )}
 
           {showNumbers && (
-            <div style={{ fontSize: 14, opacity: 0.7 }}>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>
               {answerPlayer ? `#${answerPlayer.number}` : ""}
             </div>
           )}

@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import Autocomplete from "./Autocomplete";
-
-const isMobile = window.innerWidth <= 768;
-
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function InputBox({
   value,
@@ -13,27 +11,38 @@ export default function InputBox({
   onSkip,
   resultFlash
 }) {
+  const isMobile = useIsMobile();
   const [skipFlash, setSkipFlash] = useState(false);
   const [errorFlash, setErrorFlash] = useState(false);
 
   const inputRef = useRef(null);
 
-  // Auto-focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // React to game result (wrong answer only)
+  // keep keyboard open on mobile
+  useEffect(() => {
+    if (!isMobile) return;
+    const id = setInterval(() => {
+      if (document.activeElement !== inputRef.current) {
+        inputRef.current?.focus();
+      }
+    }, 350);
+    return () => clearInterval(id);
+  }, [isMobile]);
+
   useEffect(() => {
     if (resultFlash !== "wrong") return;
-
     setErrorFlash(true);
     const t = setTimeout(() => setErrorFlash(false), 200);
     return () => clearTimeout(t);
   }, [resultFlash]);
 
-  // Keyboard controls
+  // keyboard controls (desktop only)
   useEffect(() => {
+    if (isMobile) return;
+
     function handleKey(e) {
       if (e.key === "Control" && onSkip) {
         setSkipFlash(true);
@@ -59,27 +68,38 @@ export default function InputBox({
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [value, suggestions, onSubmit, onSelectSuggestion, onSkip]);
+  }, [isMobile, value, suggestions, onSubmit, onSelectSuggestion, onSkip]);
 
   return (
-<div
-  style={{
-    width: isMobile ? "100%" : 360,
-    maxWidth: 360,
-    margin: "0 auto",
-    display: "flex",
-    flexDirection: "column",
-    position: "relative",
-    paddingLeft: isMobile ? 12 : 0,
-    paddingRight: isMobile ? 12 : 0
-  }}
->
-
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 360,
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        paddingLeft: isMobile ? 12 : 0,
+        paddingRight: isMobile ? 12 : 0
+      }}
+    >
       <input
         ref={inputRef}
         value={value}
         placeholder="Enter player name"
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => {
+          if (!isMobile) return;
+          setTimeout(() => inputRef.current?.focus(), 0);
+        }}
+        // kill iOS contact autofill
+        autoComplete="new-password"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        name="foopy_player"
+        id="foopy_player"
+        inputMode="text"
         style={{
           width: "100%",
           height: 46,
@@ -93,7 +113,6 @@ export default function InputBox({
         }}
       />
 
-      {/* Floating autocomplete */}
       {suggestions.length > 0 && (
         <div
           style={{
@@ -104,40 +123,45 @@ export default function InputBox({
             zIndex: 20
           }}
         >
-          <Autocomplete
-            suggestions={suggestions}
-            onSelect={onSelectSuggestion}
-          />
+          <Autocomplete suggestions={suggestions} onSelect={onSelectSuggestion} />
         </div>
       )}
 
-      <button
-        onClick={() => {
-          if (!value.trim()) {
-            setErrorFlash(true);
-            setTimeout(() => setErrorFlash(false), 200);
-            return;
-          }
-          onSubmit(value);
-        }}
-        style={{
-          ...buttonStyle,
-          background: errorFlash ? "#ffd6d6" : "#111",
-          color: errorFlash ? "#000" : "#fff"
-        }}
-      >
-        ENTER
-      </button>
+      {/* Desktop only ENTER */}
+      {!isMobile && (
+        <button
+          onClick={() => {
+            if (!value.trim()) {
+              setErrorFlash(true);
+              setTimeout(() => setErrorFlash(false), 200);
+              return;
+            }
+            onSubmit(value);
+          }}
+          style={{
+            ...buttonStyle,
+            background: errorFlash ? "#ffd6d6" : "#111",
+            color: errorFlash ? "#000" : "#fff"
+          }}
+        >
+          ENTER
+        </button>
+      )}
 
+      {/* Skip: remove (CTRL) on mobile */}
       {onSkip && (
         <button
-          onClick={onSkip}
+          onClick={() => {
+            setSkipFlash(true);
+            onSkip();
+            setTimeout(() => setSkipFlash(false), 150);
+          }}
           style={{
             ...skipStyle,
             background: skipFlash ? "#b6f5c9" : "#d9d9d9"
           }}
         >
-          SKIP (CTRL)
+          {isMobile ? "SKIP" : "SKIP (CTRL)"}
         </button>
       )}
     </div>
@@ -147,7 +171,7 @@ export default function InputBox({
 const buttonStyle = {
   marginTop: 14,
   width: "100%",
-height: isMobile ? 44 : 48,
+  height: 48,
   fontSize: 16,
   borderRadius: 10,
   fontWeight: 700,
@@ -159,7 +183,7 @@ height: isMobile ? 44 : 48,
 const skipStyle = {
   marginTop: 8,
   width: "100%",
-height: isMobile ? 40 : 42,
+  height: 42,
   fontSize: 14,
   borderRadius: 10,
   cursor: "pointer",
