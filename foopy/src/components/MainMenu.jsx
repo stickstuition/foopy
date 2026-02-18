@@ -7,13 +7,12 @@ import LeaderboardModal from "./LeaderboardModal";
 
 import useIsMobile from "../hooks/useIsMobile";
 
-const isMobile = useIsMobile();
-
-
 /* ========================================================= */
 
 export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
   const { user } = useAuth();
+  const isMobile = useIsMobile(); // ✅ HOOK MOVED INSIDE COMPONENT
+
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -114,8 +113,6 @@ function ProfileButton({ user, onOpen }) {
    STYLES
    ========================================================= */
 
-/* ---------- Layout ---------- */
-
 const desktopWrap = {
   width: "100%",
   height: "100%",
@@ -146,8 +143,6 @@ const content = (mobile) => ({
   gap: mobile ? 22 : 28
 });
 
-/* ---------- Logo ---------- */
-
 const desktopLogo = {
   width: 420,
   marginBottom: 20
@@ -156,8 +151,6 @@ const desktopLogo = {
 const mobileLogo = {
   width: 260
 };
-
-/* ---------- Buttons ---------- */
 
 const buttonStack = {
   width: "100%",
@@ -189,8 +182,6 @@ const primaryStyle = {
 const redStyle = {
   background: "linear-gradient(to bottom, #ff6b6b, #c92a2a)"
 };
-
-/* ---------- HUD ---------- */
 
 const hud = (mobile, profileOpen) => ({
   position: "absolute",

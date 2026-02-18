@@ -3,8 +3,6 @@ import teams from "../engine/players";
 import { useAuth } from "../auth/AuthContext";
 import { playDownClick, playUpClick } from "../utils/uiSounds";
 
-import { useMemo, useState, useEffect } from "react";
-
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 720);
 
