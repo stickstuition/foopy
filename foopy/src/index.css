@@ -29,3 +29,16 @@ code {
 
   border-radius: 10px;
 }
+
+/* Mobile equation scaling */
+@media (max-width: 430px) {
+  .equation-scale {
+    transform: scale(0.75);
+  }
+}
+
+@media (max-width: 390px) {
+  .equation-scale {
+    transform: scale(0.7);
+  }
+}
