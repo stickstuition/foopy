@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import PlayerCard from "./PlayerCard";
 import UnknownPlayerCard from "./UnknownPlayerCard";
 
@@ -13,10 +13,8 @@ export default function EquationRow({
   answerPlayer
 }) {
   const safePlayers = Array.isArray(players) ? players : [];
-  const containerRef = useRef(null);
-  const [scale, setScale] = useState(1);
 
-  /* ---------- Fade animation ---------- */
+  /* ---------- Answer fade animation ---------- */
   useEffect(() => {
     const id = "equationrow-answer-fade";
     if (document.getElementById(id)) return;
@@ -32,21 +30,11 @@ export default function EquationRow({
     document.head.appendChild(style);
   }, []);
 
-  /* ---------- HARD WIDTH CLAMP ---------- */
-  useLayoutEffect(() => {
-    function recalc() {
-      if (!containerRef.current) return;
-
-      const viewportWidth = window.innerWidth;
-      const nextScale = Math.min(1, viewportWidth / MAX_WIDTH);
-
-      setScale(nextScale);
-    }
-
-    recalc();
-    window.addEventListener("resize", recalc);
-    return () => window.removeEventListener("resize", recalc);
-  }, []);
+  // 🔥 SAFARI-SAFE HARD SCALE
+  const zoom =
+    typeof window !== "undefined" && window.innerWidth < MAX_WIDTH
+      ? window.innerWidth / MAX_WIDTH
+      : 1;
 
   return (
     <div
@@ -58,18 +46,17 @@ export default function EquationRow({
       }}
     >
       <div
-        ref={containerRef}
         style={{
           width: MAX_WIDTH,
-          transform: `scale(${scale})`,
-          transformOrigin: "center top",
           display: "flex",
           alignItems: "center",
           gap: 16,
           paddingTop: 16,
-          marginBottom: 20
+          marginBottom: 20,
+          zoom // ✅ THIS is the fix
         }}
       >
+        {/* LEFT PLAYERS */}
         {safePlayers.map((p, index) => (
           <div
             key={`${p.name}-${index}`}
@@ -82,6 +69,7 @@ export default function EquationRow({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <PlayerCard image={p.image} />
+
               {index < safePlayers.length - 1 && (
                 <span style={{ fontSize: 44, fontWeight: 900 }}>
                   {operator}
@@ -99,6 +87,7 @@ export default function EquationRow({
           </div>
         ))}
 
+        {/* EQUALS */}
         <div
           style={{
             height: 160,
@@ -111,6 +100,7 @@ export default function EquationRow({
           <span style={{ fontSize: 44, fontWeight: 900 }}>=</span>
         </div>
 
+        {/* ANSWER */}
         <div
           style={{
             display: "flex",
