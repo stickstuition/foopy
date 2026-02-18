@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import PlayerCard from "./PlayerCard";
 import UnknownPlayerCard from "./UnknownPlayerCard";
+
+const MAX_WIDTH = 1206;
 
 export default function EquationRow({
   players,
@@ -11,8 +13,10 @@ export default function EquationRow({
   answerPlayer
 }) {
   const safePlayers = Array.isArray(players) ? players : [];
+  const containerRef = useRef(null);
+  const [scale, setScale] = useState(1);
 
-  /* ---------- Answer fade animation ---------- */
+  /* ---------- Fade animation ---------- */
   useEffect(() => {
     const id = "equationrow-answer-fade";
     if (document.getElementById(id)) return;
@@ -21,21 +25,30 @@ export default function EquationRow({
     style.id = id;
     style.textContent = `
       @keyframes answerFade {
-        from {
-          opacity: 0;
-          transform: scale(0.96);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: scale(1); }
       }
     `;
     document.head.appendChild(style);
   }, []);
 
+  /* ---------- HARD WIDTH CLAMP ---------- */
+  useLayoutEffect(() => {
+    function recalc() {
+      if (!containerRef.current) return;
+
+      const viewportWidth = window.innerWidth;
+      const nextScale = Math.min(1, viewportWidth / MAX_WIDTH);
+
+      setScale(nextScale);
+    }
+
+    recalc();
+    window.addEventListener("resize", recalc);
+    return () => window.removeEventListener("resize", recalc);
+  }, []);
+
   return (
-    /* OUTER WRAPPER: centers + prevents overflow */
     <div
       style={{
         width: "100%",
@@ -44,19 +57,19 @@ export default function EquationRow({
         justifyContent: "center"
       }}
     >
-      {/* INNER WRAPPER: the equation itself (scaled as one unit) */}
       <div
-        className="equation-scale"
+        ref={containerRef}
         style={{
+          width: MAX_WIDTH,
+          transform: `scale(${scale})`,
+          transformOrigin: "center top",
           display: "flex",
           alignItems: "center",
           gap: 16,
-          paddingTop: 24,
-          marginBottom: 20,
-          transformOrigin: "center top"
+          paddingTop: 16,
+          marginBottom: 20
         }}
       >
-        {/* LEFT SIDE PLAYERS */}
         {safePlayers.map((p, index) => (
           <div
             key={`${p.name}-${index}`}
@@ -69,15 +82,8 @@ export default function EquationRow({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <PlayerCard image={p.image} />
-
               {index < safePlayers.length - 1 && (
-                <span
-                  style={{
-                    fontSize: 44,
-                    fontWeight: 900,
-                    lineHeight: 1
-                  }}
-                >
+                <span style={{ fontSize: 44, fontWeight: 900 }}>
                   {operator}
                 </span>
               )}
@@ -93,10 +99,9 @@ export default function EquationRow({
           </div>
         ))}
 
-        {/* EQUALS SIGN */}
         <div
           style={{
-            height: 220,
+            height: 160,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -106,7 +111,6 @@ export default function EquationRow({
           <span style={{ fontSize: 44, fontWeight: 900 }}>=</span>
         </div>
 
-        {/* ANSWER PLAYER */}
         <div
           style={{
             display: "flex",
