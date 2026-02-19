@@ -310,7 +310,7 @@ const overlay = {
 };
 
 const modal = {
-  width: "min(760px, 96vw)",
+  width: "min(760px, 94vw)",
   height: "54vh",              // 👈 LOCK IT
   maxHeight: "54vh",
   minHeight: "54vh",
@@ -349,21 +349,35 @@ const closeBtn = {
 
 const tabsRow = {
   display: "flex",
-  gap: 10,
-  padding: "12px 14px",
+  gap: 8,
+  padding: "10px 12px",
   borderBottom: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(0,0,0,0.25)"
+  background: "rgba(0,0,0,0.25)",
+
+  overflowX: "auto",
+  overflowY: "hidden",
+  WebkitOverflowScrolling: "touch",
+
+  scrollbarWidth: "none"
+};
+
+tabsRow["&::-webkit-scrollbar"] = {
+  display: "none"
 };
 
 const tabBtn = {
   border: "1px solid rgba(255,255,255,0.12)",
   background: "rgba(255,255,255,0.04)",
   color: "#eaeaea",
-  padding: "10px 12px",
-  borderRadius: 12,
+  padding: "8px 10px",
+  borderRadius: 10,
   cursor: "pointer",
-  fontWeight: 700
+  fontWeight: 700,
+  fontSize: 13,
+  whiteSpace: "nowrap",
+  flexShrink: 0
 };
+
 
 const tabBtnActive = {
   background: "rgba(255,255,255,0.12)",

@@ -24,13 +24,17 @@ const TEAM_PICK_SECONDS = 10;
 
 const wrap = {
   width: "100%",
-  height: "100%",
+  minHeight: "100svh",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
+  justifyContent: "flex-start",
   textAlign: "center",
+  paddingTop: 72,
+  paddingBottom: 96,
+  boxSizing: "border-box"
 };
+
 
 const actions = {
   display: "flex",
@@ -689,7 +693,15 @@ if (renderStage === "lobby") {
       <p style={{ marginBottom: 24, opacity: 0.7 }} />
 
       {/* Players */}
-      <div style={{ display: "flex", gap: 40, marginBottom: 28 }}>
+      <div
+  style={{
+    display: "flex",
+    gap: 16,
+    marginBottom: 28,
+    width: "100%",
+    justifyContent: "center"
+  }}
+>
         <LobbyPlayerCard
           label="Host"
           profile={profiles.host}
@@ -704,7 +716,17 @@ if (renderStage === "lobby") {
       <div>
   <p style={{ fontWeight: 700 }}>Wager</p>
 
-  <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+  <div
+  style={{
+    display: "flex",
+    gap: 12,
+    marginTop: 8,
+    flexWrap: "wrap",
+    justifyContent: "center",
+    maxWidth: 340
+  }}
+>
+
     {[10, 50, 100, 500].map((amt) => {
       const opponentRole = me === "host" ? "guest" : "host";
       const opponentPicked = wager?.[opponentRole] === amt;
@@ -748,7 +770,14 @@ if (renderStage === "lobby") {
 
 
       {/* Actions */}
-      <div style={{ marginTop: 28, display: "flex", gap: 14 }}>
+      <div
+  style={{
+    marginTop: 32,
+    display: "flex",
+    gap: 14,
+    paddingBottom: 24
+  }}
+>
         <FoopyButton
           label="Start Match"
           primary
@@ -991,7 +1020,9 @@ function LobbyPlayerCard({ label, profile }) {
 /* ---------- LOBBY CARD STYLES ---------- */
 
 const lobbyCard = {
-  width: 190,
+  width: "42vw",
+  maxWidth: 190,
+  minWidth: 140,
   height: 160,
   borderRadius: 16,
   background: "#ffffff",

@@ -187,12 +187,12 @@ return (
   <div
     style={{
       ...styles.page,
-      height: isMobile ? "auto" : "100%",
-      overflowY: isMobile ? "auto" : "hidden",
       paddingBottom: isMobile ? 24 : 20
     }}
   >
-    <h1 style={styles.title}>Game Options</h1>
+<div style={{ height: isMobile ? 64 : 0 }} />
+<h1 style={styles.title}>Game Options</h1>
+
 
 
       {/* ---------- TEAMS ---------- */}
@@ -405,13 +405,15 @@ function ToggleColumn({ title, value, onToggle }) {
 /* ---------- STYLES ---------- */
 
 const styles = {
-  page: {
-    width: "100%",
-    height: "100vh",
-    padding: 20,
-    boxSizing: "border-box",
-    overflow: "hidden"
-  },
+page: {
+  width: "100%",
+  height: "100vh",
+  padding: 20,
+  boxSizing: "border-box",
+  overflowY: "auto",
+  WebkitOverflowScrolling: "touch"
+},
+
   title: {
     margin: "4px 0 10px",
     textAlign: "center",

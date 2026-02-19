@@ -161,12 +161,13 @@ const desktopWrap = {
 
 const mobileWrap = {
   width: "100vw",
-  minHeight: "100svh",
+  height: "100svh",
   overflowX: "hidden",
+  overflowY: "hidden",
   display: "flex",
   justifyContent: "center",
   alignItems: "flex-start",
-  paddingTop: 40
+  paddingTop: 56
 };
 
 const content = (mobile) => ({
