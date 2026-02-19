@@ -139,8 +139,6 @@ const ALLOWED_ORIGINS = (
   .split(",")
   .map(o => o.trim());
 
-  console.log("ALLOWED_ORIGINS AT BOOT =", ALLOWED_ORIGINS);
-
 
 app.use(
   cors({
@@ -1311,11 +1309,14 @@ app.post("/badges/equip", (req, res) => {
 
 app.post("/badges/buy", (req, res) => {
   const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+  if (!userId) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
 
   const { badgeId } = req.body;
   const badge = BADGES[badgeId];
-  if (!badge || badge.unlock.method !== "coins") {
+
+  if (!badge) {
     return res.status(400).json({ error: "Invalid badge" });
   }
 
@@ -1328,11 +1329,39 @@ app.post("/badges/buy", (req, res) => {
   const coins = row?.coins ?? 0;
   const owned = parseBadgesOwned(row?.badges_owned);
 
+  // Already owned → no-op success
   if (owned.includes(badgeId)) {
     return res.json({ ok: true });
   }
 
-  if (coins < badge.unlock.cost) {
+  // ---------- SECRET BADGE: Tasmania Devils ----------
+  if (badge.unlock.method === "all_teams") {
+    const teamBadgeIds = Object.values(BADGES)
+      .filter(b => b.type === "team")
+      .map(b => b.id);
+
+    const ownsAllTeams = teamBadgeIds.every(id =>
+      owned.includes(id)
+    );
+
+    if (!ownsAllTeams) {
+      return res.status(403).json({ error: "Secret badge locked" });
+    }
+
+    // Tasmania still costs coins? If not, set cost = 0 in badges.js
+  }
+
+  // ---------- COIN VALIDATION ----------
+  if (
+    badge.unlock.method !== "coins" &&
+    badge.unlock.method !== "all_teams"
+  ) {
+    return res.status(400).json({ error: "Invalid badge" });
+  }
+
+  const cost = badge.unlock.cost ?? 0;
+
+  if (coins < cost) {
     return res.status(400).json({ error: "Not enough coins" });
   }
 
@@ -1346,15 +1375,15 @@ app.post("/badges/buy", (req, res) => {
       badges_owned = ?
     WHERE id = ?
   `).run(
-    badge.unlock.cost,
-    badge.unlock.cost,
+    cost,
+    cost,
     JSON.stringify(nextOwned),
     userId
   );
 
   res.json({
     ok: true,
-    coins: coins - badge.unlock.cost,
+    coins: coins - cost,
     badgesOwned: nextOwned
   });
 });
