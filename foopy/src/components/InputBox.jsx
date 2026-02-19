@@ -93,7 +93,7 @@ export default function InputBox({
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
         // kill iOS contact autofill
-        autoComplete="new-password"
+        autoComplete="off"
         autoCorrect="off"
         autoCapitalize="none"
         spellCheck={false}

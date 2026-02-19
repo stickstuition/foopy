@@ -60,3 +60,13 @@
   color: white;
   z-index: 1;
 }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  position: fixed;
+  width: 100%;
+}

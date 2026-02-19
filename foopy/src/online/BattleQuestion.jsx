@@ -280,13 +280,15 @@ useEffect(() => {
 
 const wrap = {
   width: "100%",
-  height: "100%",
+  flex: 1,                 // 👈 IMPORTANT
   position: "relative",
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  flexDirection: "column"
+  overflow: "hidden"
 };
+
 
 const gameArea = {
   width: "100%",
