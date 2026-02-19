@@ -14,7 +14,7 @@ import { API_URL } from "../config/api";
 
 // IMPORTANT: adjust this import if your teams live elsewhere
 // This should be the same object you use in ModsScreen: Object.keys(teams)
-import teams from "../engine/playersmedium";
+import teams from "../engine/playerseasy";
 
 const WIN_SCORE = 5;
 

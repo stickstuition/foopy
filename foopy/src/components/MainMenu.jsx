@@ -6,8 +6,6 @@ import ProfileModal from "../components/profile/ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import useIsMobile from "../hooks/useIsMobile";
 
-/* ========================================================= */
-
 export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -19,9 +17,10 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
 
   return (
     <div style={isMobile ? mobileWrap : desktopWrap}>
-      {/* DESKTOP AFL LOGO CLOUD */}
+      {/* AFL LOGO CLOUD */}
       {!isMobile && <AFLLogoCloud />}
 
+      {/* MODALS */}
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
 
       <LeaderboardModal
@@ -29,22 +28,20 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
         onClose={() => setLeaderboardOpen(false)}
       />
 
-      {/* DESKTOP HUD ONLY */}
-      {!isMobile && (
-        <div style={hud(false, profileOpen)}>
-          <LeaderboardButton
-            onClick={() => setLeaderboardOpen(true)}
-            mobile={false}
-          />
-          <ProfileButton
-            user={user}
-            onOpen={() => setProfileOpen(true)}
-            mobile={false}
-          />
-        </div>
-      )}
+      {/* HUD (DESKTOP + MOBILE) */}
+      <div style={hud(isMobile, profileOpen)}>
+        <LeaderboardButton
+          onClick={() => setLeaderboardOpen(true)}
+          mobile={isMobile}
+        />
+        <ProfileButton
+          user={user}
+          onOpen={() => setProfileOpen(true)}
+          mobile={isMobile}
+        />
+      </div>
 
-      {/* CONTENT */}
+      {/* MAIN CONTENT */}
       <div style={content(isMobile)}>
         <img
           src="/assets/foopy-logo.png"
@@ -67,26 +64,38 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
    ========================================================= */
 
 function MenuButton({ label, onClick, red, primary }) {
-  let pressed = false;
+  const [pressed, setPressed] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
       onClick={onClick}
-      onMouseDown={() => {
-        pressed = true;
+      onPointerDown={() => {
+        setPressed(true);
         playDownClick(true);
       }}
-      onMouseUp={() => {
-        if (pressed) {
-          playUpClick(true);
-          pressed = false;
-        }
+      onPointerUp={() => {
+        setPressed(false);
+        playUpClick(true);
       }}
-      onMouseLeave={() => (pressed = false)}
+      onPointerLeave={() => {
+        setPressed(false);
+        setHovered(false);
+      }}
+      onPointerEnter={() => setHovered(true)}
       style={{
         ...buttonBase,
         ...(primary && primaryStyle),
-        ...(red && redStyle)
+        ...(red && redStyle),
+        transform: pressed
+          ? "translateY(2px)"
+          : hovered
+          ? "translateY(1px)"
+          : "translateY(0)",
+        boxShadow: pressed
+          ? "0 4px 10px rgba(0,0,0,0.35)"
+          : "0 8px 20px rgba(0,0,0,0.35)",
+        transition: "transform 120ms ease, box-shadow 120ms ease"
       }}
     >
       {label}
@@ -94,13 +103,11 @@ function MenuButton({ label, onClick, red, primary }) {
   );
 }
 
+
+
 function LeaderboardButton({ onClick, mobile }) {
   return (
-    <div
-      title="Leaderboards"
-      onClick={onClick}
-      style={hudButton(mobile)}
-    >
+    <div title="Leaderboards" onClick={onClick} style={hudButton(mobile)}>
       🏆
     </div>
   );
@@ -128,20 +135,43 @@ function ProfileButton({ user, onOpen, mobile }) {
   );
 }
 
+/* =========================================================
+   AFL LOGO CLOUD (REAL, FROM /public/logos)
+   ========================================================= */
+
 function AFLLogoCloud() {
+  const clubs = [
+    "AdelaideCrows",
+    "BrisbaneLions",
+    "Carlton",
+    "Collingwood",
+    "Essendon",
+    "Fremantle",
+    "GCSuns",
+    "Geelong",
+    "GWS",
+    "Hawthorn",
+    "Melbourne",
+    "North_Melbourne",
+    "PortAdelaide",
+    "Richmond",
+    "StKildaFC",
+    "SydneySwans",
+    "West_Coast",
+    "Western_Bulldogs"
+  ];
+
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        backgroundImage: 'url("/assets/afl-logo-cloud.png")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        opacity: 0.08,
-        pointerEvents: "none",
-        zIndex: 0
-      }}
-    />
+    <div style={logoCloudWrap}>
+      {clubs.map((club) => (
+        <img
+          key={club}
+          src={`/logos/${club}.webp`}
+          alt=""
+          style={logoCloudImg}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -162,8 +192,7 @@ const desktopWrap = {
 const mobileWrap = {
   width: "100vw",
   height: "100svh",
-  overflowX: "hidden",
-  overflowY: "hidden",
+  overflow: "hidden",
   display: "flex",
   justifyContent: "center",
   alignItems: "flex-start",
@@ -206,13 +235,15 @@ const buttonBase = {
   alignItems: "center",
   justifyContent: "center",
   fontSize: 20,
-  fontWeight: 800,
+  fontWeight: 900,
   color: "#fff",
   cursor: "pointer",
   userSelect: "none",
-  boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
-  background: "linear-gradient(to bottom, #5c8fc6, #3b5f87)"
+  border: "2px solid rgba(255,255,255,0.35)",
+  background: "linear-gradient(to bottom, #6fa8dc, #3b5f87)",
+  textShadow: "0 1px 1px rgba(0,0,0,0.35)"
 };
+
 
 const primaryStyle = {
   background: "linear-gradient(to bottom, #4dabf7, #1c7ed6)"
@@ -258,3 +289,21 @@ const profileButton = (mobile) => ({
   overflow: "hidden",
   cursor: "pointer"
 });
+
+const logoCloudWrap = {
+  position: "absolute",
+  inset: 0,
+  padding: 80,
+  display: "grid",
+  gridTemplateColumns: "repeat(6, 1fr)",
+  gap: 32,
+  opacity: 0.06,
+  pointerEvents: "none",
+  zIndex: 0
+};
+
+const logoCloudImg = {
+  width: "100%",
+  objectFit: "contain",
+  filter: "grayscale(100%)"
+};

@@ -12,6 +12,25 @@ export default function BadgeShopTab() {
 
   if (!user) return null;
 
+  const visibleBadges = BADGE_LIST.filter((badge) => {
+  // Normal badges always visible
+  if (!badge.hidden) return true;
+
+  // Secret badge: Tasmania Devils
+  if (badge.unlock?.method === "all_teams") {
+    const teamBadgeIds = BADGE_LIST
+      .filter(b => b.type === "team")
+      .map(b => b.id);
+
+    return teamBadgeIds.every(id =>
+      user.badgesOwned?.includes(id)
+    );
+  }
+
+  return false;
+});
+
+
   return (
     <div style={wrap}>
       <div style={topLine}>
@@ -20,13 +39,14 @@ export default function BadgeShopTab() {
       </div>
 
       <div style={grid}>
-        {BADGE_LIST.map((badge) => {
+        {visibleBadges.map((badge) => {
           const owned = user.badgesOwned?.includes(badge.id);
           const equipped = user.badgeEquipped === badge.id;
 
           const isChallenge = badge.unlock.method === "challenge";
-          const isCoins = badge.unlock.method === "coins";
-
+          const isCoins =
+  badge.unlock.method === "coins" ||
+  badge.unlock.method === "all_teams";
           const canBuy = isCoins && !owned;
           const canEquip = owned && !equipped;
 
@@ -34,12 +54,13 @@ export default function BadgeShopTab() {
 
           return (
             <div
-              key={badge.id}
-              style={{
-                ...card,
-                ...(purchaseFlashId === badge.id ? purchaseFlash : null)
-              }}
-            >
+  key={badge.id}
+  style={{
+    ...card,
+    ...(equipped ? cardEquipped : null),
+    ...(purchaseFlashId === badge.id ? purchaseFlash : null)
+  }}
+>
               <div style={iconWrap}>
   <img
     src={badge.icon}
@@ -55,9 +76,6 @@ export default function BadgeShopTab() {
 </div>
 
 <div style={name}>{badge.name}</div>
-
-
-              {equipped && <div style={pillEquipped}>Equipped</div>}
 
               {isChallenge && !owned && (
                 <div style={pillLocked}>Locked, challenge</div>
@@ -230,4 +248,10 @@ const buyFlash = {
 const purchaseFlash = {
   background:
     "linear-gradient(120deg, rgba(255,215,0,0.35), rgba(255,255,255,0.08))"
+};
+
+const cardEquipped = {
+  border: "2px solid #4caf50",
+  boxShadow: "0 0 0 1px rgba(76,175,80,0.4), 0 6px 18px rgba(0,0,0,0.4)",
+  background: "linear-gradient(180deg, rgba(76,175,80,0.12), rgba(255,255,255,0.04))"
 };

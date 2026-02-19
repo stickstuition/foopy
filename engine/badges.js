@@ -1,7 +1,16 @@
 // src/engine/badges.js
 
-const CITY_BADGE_COST = 1000;
+/* =========================
+   COST CONSTANTS
+   ========================= */
+
 const TEAM_BADGE_COST = 500;
+const CITY_BADGE_COST = 1000;
+const QUEENSCLIFF_COST = 100000;
+
+/* =========================
+   BADGE FACTORIES
+   ========================= */
 
 function teamBadge(id, name, icon) {
   return {
@@ -10,6 +19,17 @@ function teamBadge(id, name, icon) {
     type: "team",
     icon,
     unlock: { method: "coins", cost: TEAM_BADGE_COST }
+  };
+}
+
+function cityBadge(id, name, icon, cost = CITY_BADGE_COST) {
+  return {
+    id,
+    name,
+    type: "city",
+    icon,
+    fullArt: true,
+    unlock: { method: "coins", cost }
   };
 }
 
@@ -24,20 +44,25 @@ function challengeBadge(id, name, icon, challengeId) {
   };
 }
 
-function cityBadge(id, name, icon) {
+function secretBadge(id, name, icon, unlock) {
   return {
     id,
     name,
-    type: "city",
+    type: "special",
     icon,
     fullArt: true,
-    unlock: { method: "coins", cost: CITY_BADGE_COST }
+    hidden: true,
+    unlock
   };
 }
 
+/* =========================
+   BADGE DEFINITIONS
+   ========================= */
 
 export const BADGES = {
-  // Team badges
+  /* ---------- TEAM BADGES (18 AFL TEAMS) ---------- */
+
   adel: teamBadge("adel", "Adelaide Crows", "/logos/AdelaideCrows.webp"),
   bri: teamBadge("bri", "Brisbane Lions", "/logos/BrisbaneLions.webp"),
   car: teamBadge("car", "Carlton", "/logos/Carlton.webp"),
@@ -57,21 +82,50 @@ export const BADGES = {
   wce: teamBadge("wce", "West Coast Eagles", "/logos/West_Coast.webp"),
   wbd: teamBadge("wbd", "Western Bulldogs", "/logos/Western_Bulldogs.webp"),
 
-founder: challengeBadge("founder", "Founder", "/badges/founder01.png", "founder"),
-tas: challengeBadge("tas", "Tasmania Devils", "/badges/TasmaniaDevils.webp", "tas"),
+  /* ---------- SPECIAL / CHALLENGE ---------- */
 
-  // City badges (premium)
+  founder: challengeBadge(
+    "founder",
+    "Founder",
+    "/badges/founder01.png",
+    "founder"
+  ),
+
+  /* ---------- CITY BADGES ---------- */
+
   adl: cityBadge("adl", "Adelaide", "/badges/adelaide01.png"),
   bne: cityBadge("bne", "Brisbane", "/badges/brisbane01.png"),
   drw: cityBadge("drw", "Darwin", "/badges/darwin01.png"),
   hba: cityBadge("hba", "Hobart", "/badges/hobart01.png"),
   melb: cityBadge("melb", "Melbourne", "/badges/melbourne01.png"),
   per: cityBadge("per", "Perth", "/badges/perth01.png"),
-  sydc: cityBadge("sydc", "Sydney", "/badges/sydney01.png")
+  sydc: cityBadge("sydc", "Sydney", "/badges/sydney01.png"),
+
+  /* ---------- PREMIUM CITY ---------- */
+
+  queens: cityBadge(
+    "queens",
+    "Queenscliff Coutas",
+    "/badges/queenscliff01.png",
+    QUEENSCLIFF_COST
+  ),
+
+  /* ---------- SECRET BADGE ---------- */
+
+  tas: secretBadge(
+    "tas",
+    "Tasmania Devils",
+    "/badges/TasmaniaDevils.webp",
+    { method: "all_teams" }
+  )
 };
 
-// Helper lists (useful for UI)
+/* =========================
+   HELPER EXPORTS
+   ========================= */
+
 export const BADGE_LIST = Object.values(BADGES);
+
 export const TEAM_BADGE_IDS = BADGE_LIST
   .filter(b => b.type === "team")
   .map(b => b.id);
