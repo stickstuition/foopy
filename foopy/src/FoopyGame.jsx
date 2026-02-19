@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import GamePanel from "./components/GamePanel";
 import { API_URL } from "./config/api";
+import FoopyGameLayoutMobile from "./FoopyGameLayoutMobile";
+import useIsMobile from "./hooks/useIsMobile";
 
 import ModsScreen from "./components/ModsScreen";
 import EquationRow from "./components/EquationRow";
@@ -37,6 +39,7 @@ const coinsBeforeRef = useRef(null);
   const [skipLocked, setSkipLocked] = useState(false);
   const [lastPoints, setLastPoints] = useState(null);
   const [committing, setCommitting] = useState(false);
+const isMobile = useIsMobile();
 
   // mods → ballup → playing → gameover
 
@@ -389,67 +392,90 @@ if (gameState === "countdown") {
 
   /* ---------- MAIN GAME ---------- */
 
-    // ---------- LOCAL PROFILES (Timed Mode) ----------
+  /* ---------- MAIN GAME ---------- */
 
-// ---- Timed Mode profile (matches OnlineBattle shape) ----
-const profiles = {
-  host: user
-    ? {
-        userId: user.id,
-        username: user.username,
-        badgeEquipped: user.badgeEquipped ?? null
-      }
-    : null,
-  guest: null
-};
+  // ---------- LOCAL PROFILES (Timed Mode) ----------
+  const profiles = {
+    host: user
+      ? {
+          userId: user.id,
+          username: user.username,
+          badgeEquipped: user.badgeEquipped ?? null
+        }
+      : null,
+    guest: null
+  };
 
+  // ---------- MOBILE LAYOUT ----------
+  if (isMobile) {
+    return (
+      <FoopyGameLayoutMobile
+        user={user}
+        score={score}
+        lastPoints={lastPoints}
+        profiles={profiles}
+        question={question}
+        answerTeam={answerTeam}
+        mods={mods}
+        status={status}
+        input={input}
+        setInput={setInput}
+        suggestions={suggestions}
+        submitGuess={submitGuess}
+        skipQuestion={skipQuestion}
+        skipLocked={skipLocked}
+        time={time}
+      />
+    );
+  }
 
+  // ---------- DESKTOP LAYOUT ----------
+  return (
+    <div style={gameContent}>
+      <BattleScoreboard
+        me="host"
+        scores={{ host: score, guest: 0 }}
+        profiles={profiles}
+        singlePlayer
+        delta={lastPoints}
+      />
 
-return (
-  <div style={gameContent}>
-    <BattleScoreboard
-      me="host"
-      scores={{ host: score, guest: 0 }}
-      profiles={profiles}
-      singlePlayer
-      delta={lastPoints}
-    />
+      <EquationRow
+        players={question.players}
+        operator={question.operator}
+        status={status}
+        showNumbers={mods?.showNumbers ?? true}
+        showNames={mods?.showNames ?? true}
+        teamKey={answerTeam}
+      />
 
-    <EquationRow
-      players={question.players}
-      operator={question.operator}
-      status={status}
-      showNumbers={mods?.showNumbers ?? true}
-      showNames={mods?.showNames ?? true}
-      teamKey={answerTeam}
-    />
+      <InputBox
+        value={input}
+        onChange={setInput}
+        onSubmit={() => {
+          if (skipLocked) return;
 
-    <InputBox
-      value={input}
-      onChange={setInput}
-      onSubmit={() => {
-        if (skipLocked) return;
+          const guess =
+            suggestions.length > 0
+              ? suggestions[0].name
+              : input;
 
-        const guess =
-          suggestions.length > 0
-            ? suggestions[0].name
-            : input;
+          submitGuess(guess);
+        }}
+        suggestions={suggestions}
+        onSelectSuggestion={(name) => {
+          if (skipLocked) return;
+          setInput(name);
+          submitGuess(name);
+        }}
+        onSkip={skipQuestion}
+        resultFlash={status}
+      />
 
-        submitGuess(guess);
-      }}
-      suggestions={suggestions}
-      onSelectSuggestion={(name) => {
-        if (skipLocked) return;
-        setInput(name);
-        submitGuess(name);
-      }}
-      onSkip={skipQuestion}
-      resultFlash={status}
-    />
+      <TimerCircle time={time} flash={timeFlash} />
+    </div>
+  );
 
-    <TimerCircle time={time} flash={timeFlash} />
-  </div>
-);
 
 }
 
