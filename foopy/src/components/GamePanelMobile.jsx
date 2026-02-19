@@ -126,9 +126,13 @@ const mobileHud = {
 
 const mobileContent = {
   flex: 1,
-  paddingTop: 64, // space for HUD + notch
-  overflow: "hidden"
+  paddingTop: 72,
+  overflow: "hidden",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center"
 };
+
 
 const hudButton = {
   width: 42,

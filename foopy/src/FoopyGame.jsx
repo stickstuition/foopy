@@ -405,52 +405,60 @@ const profiles = {
 
 
 
-  return (
-    <>
-<BattleScoreboard
-  me="host"
-  scores={{ host: score, guest: 0 }}
-  profiles={profiles}
-  singlePlayer
-  delta={lastPoints}
-/>
+return (
+  <div style={gameContent}>
+    <BattleScoreboard
+      me="host"
+      scores={{ host: score, guest: 0 }}
+      profiles={profiles}
+      singlePlayer
+      delta={lastPoints}
+    />
 
+    <EquationRow
+      players={question.players}
+      operator={question.operator}
+      status={status}
+      showNumbers={mods?.showNumbers ?? true}
+      showNames={mods?.showNames ?? true}
+      teamKey={answerTeam}
+    />
 
+    <InputBox
+      value={input}
+      onChange={setInput}
+      onSubmit={() => {
+        if (skipLocked) return;
 
-      <EquationRow
-        players={question.players}
-        operator={question.operator}
-        status={status}
-        showNumbers={mods?.showNumbers ?? true}
-        showNames={mods?.showNames ?? true}
-        teamKey={answerTeam}
-      />
-      
-<InputBox
-  value={input}
-  onChange={setInput}
-  onSubmit={() => {
-    if (skipLocked) return;
+        const guess =
+          suggestions.length > 0
+            ? suggestions[0].name
+            : input;
 
-    const guess =
-      suggestions.length > 0
-        ? suggestions[0].name
-        : input;
+        submitGuess(guess);
+      }}
+      suggestions={suggestions}
+      onSelectSuggestion={(name) => {
+        if (skipLocked) return;
+        setInput(name);
+        submitGuess(name);
+      }}
+      onSkip={skipQuestion}
+      resultFlash={status}
+    />
 
-    submitGuess(guess);
-  }}
-  suggestions={suggestions}
-  onSelectSuggestion={(name) => {
-    if (skipLocked) return;
-    setInput(name);
-    submitGuess(name);
-  }}
-  onSkip={skipQuestion}
-  resultFlash={status}   // 👈 ADD THIS
-/>
+    <TimerCircle time={time} flash={timeFlash} />
+  </div>
+);
 
-
-      <TimerCircle time={time} flash={timeFlash} />
-    </>
-  );
 }
+
+const gameContent = {
+  width: "100%",
+  height: "100%",
+  paddingTop: 72, // ⬅️ clears HUD + timer
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 12
+};

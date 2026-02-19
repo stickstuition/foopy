@@ -83,35 +83,35 @@ export default function InputBox({
         paddingRight: isMobile ? 12 : 0
       }}
     >
-      <input
-        ref={inputRef}
-        value={value}
-        placeholder="Enter player name"
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => {
-          if (!isMobile) return;
-          setTimeout(() => inputRef.current?.focus(), 0);
-        }}
-        // kill iOS contact autofill
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="none"
-        spellCheck={false}
-        name="foopy_player"
-        id="foopy_player"
-        inputMode="text"
-        style={{
-          width: "100%",
-          height: 46,
-          padding: "0 14px",
-          fontSize: 16,
-          borderRadius: 10,
-          border: errorFlash ? "2px solid #ff6b6b" : "1px solid #ccc",
-          outline: "none",
-          boxSizing: "border-box",
-          transition: "border 0.15s"
-        }}
-      />
+<input
+  ref={inputRef}
+  value={value}
+  placeholder="Enter player name"
+  onChange={(e) => onChange(e.target.value)}
+  onBlur={() => {
+    if (!isMobile) return;
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }}
+  autoComplete="off"
+  autoCorrect="off"
+  autoCapitalize="off"
+  spellCheck={false}
+  inputMode="text"
+  name="not-a-name"
+  aria-autocomplete="none"
+  style={{
+    width: "100%",
+    height: 46,
+    padding: "0 14px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: errorFlash ? "2px solid #ff6b6b" : "1px solid #ccc",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border 0.15s"
+  }}
+/>
+
 
       {suggestions.length > 0 && (
         <div
