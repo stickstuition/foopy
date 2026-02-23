@@ -392,8 +392,6 @@ if (gameState === "countdown") {
 
   /* ---------- MAIN GAME ---------- */
 
-  /* ---------- MAIN GAME ---------- */
-
   // ---------- LOCAL PROFILES (Timed Mode) ----------
   const profiles = {
     host: user
