@@ -908,25 +908,32 @@ app.get("/stats/records", async (req, res) => {
   }
 });
 
-app.get("/leaderboard/global", (req, res) => {
-  const rows = db.prepare(`
-    SELECT
-      username_display AS username,
-      high_score,
-      games_played,
-      accuracy
-    FROM users
-    WHERE games_played > 0
-    ORDER BY high_score DESC
-    LIMIT 50
-  `).all();
+app.get("/leaderboard/global", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        username_display AS username,
+        COALESCE(high_score, 0) AS high_score,
+        COALESCE(games_played, 0) AS games_played,
+        accuracy
+      FROM users
+      WHERE COALESCE(games_played, 0) > 0
+      ORDER BY COALESCE(high_score, 0) DESC
+      LIMIT 50
+      `
+    );
 
     res.json({
-    leaderboard: rows.map(r => ({
-      ...r,
-      username: safeDisplayUsername(r.username)
-    }))
-  });
+      leaderboard: result.rows.map((r) => ({
+        ...r,
+        username: safeDisplayUsername(r.username),
+      })),
+    });
+  } catch (err) {
+    console.error("LEADERBOARD GLOBAL ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 app.get("/stats/recent-games", async (req, res) => {
@@ -976,93 +983,100 @@ app.get("/stats/recent-games", async (req, res) => {
   }
 });
 
-app.get("/leaderboard", (req, res) => {
-  const metric = req.query.metric || "high_score";
-  const period = req.query.period || "all";
+app.get("/leaderboard", async (req, res) => {
+  try {
+    const metric = req.query.metric || "high_score";
+    const period = req.query.period || "all";
 
-  const allowedMetrics = ["high_score", "coins", "games_played", "wins"];
-  const allowedPeriods = ["all", "week", "today"];
+    const allowedMetrics = ["high_score", "coins", "games_played", "wins"];
+    const allowedPeriods = ["all", "week", "today"];
 
-  if (!allowedMetrics.includes(metric) || !allowedPeriods.includes(period)) {
-    return res.status(400).json({ error: "Invalid metric or period" });
+    if (!allowedMetrics.includes(metric) || !allowedPeriods.includes(period)) {
+      return res.status(400).json({ error: "Invalid metric or period" });
+    }
+
+    // time filter is based on games.created_at (ms)
+    let timeWhere = "";
+    const params = [];
+
+    if (period === "today") {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      params.push(startOfDay.getTime());
+      timeWhere = `AND g.created_at >= $${params.length}`;
+    }
+
+    if (period === "week") {
+      const startOfWeek = new Date();
+      const day = startOfWeek.getDay() || 7; // Mon=1..Sun=7
+      startOfWeek.setDate(startOfWeek.getDate() - day + 1);
+      startOfWeek.setHours(0, 0, 0, 0);
+      params.push(startOfWeek.getTime());
+      timeWhere = `AND g.created_at >= $${params.length}`;
+    }
+
+    // metric logic
+    let valueExpr;
+    let orderExpr;
+
+    switch (metric) {
+      case "high_score":
+        valueExpr = "MAX(g.score)";
+        orderExpr = "value DESC";
+        break;
+
+      case "coins":
+        valueExpr = "MAX(COALESCE(u.peak_coins, 0))";
+        orderExpr = "value DESC";
+        break;
+
+      case "games_played":
+        valueExpr = "COUNT(g.id)";
+        orderExpr = "value DESC";
+        break;
+
+      case "wins":
+        valueExpr = `
+          SUM(
+            CASE
+              WHEN g.mode = 'online' AND g.did_win = TRUE THEN 1
+              ELSE 0
+            END
+          )
+        `;
+        orderExpr = "value DESC";
+        break;
+    }
+
+    const sql = `
+      SELECT
+        u.username_display AS username,
+        (${valueExpr}) AS value,
+        COUNT(g.id) AS games_played,
+        AVG(g.accuracy) AS accuracy
+      FROM users u
+      JOIN games g ON g.user_id = u.id
+      WHERE 1=1
+      ${timeWhere}
+      GROUP BY u.id
+      HAVING (${valueExpr}) > 0
+      ORDER BY ${orderExpr}
+      LIMIT 50
+    `;
+
+    const result = await pool.query(sql, params);
+
+    res.json({
+      leaderboard: result.rows.map((r) => ({
+        ...r,
+        username: safeDisplayUsername(r.username),
+      })),
+    });
+  } catch (err) {
+    console.error("LEADERBOARD ERROR:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  let timeWhere = "";
-  let params = [];
-
-  if (period === "today") {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    timeWhere = "AND g.created_at >= ?";
-    params.push(startOfDay.getTime());
-  }
-
-  if (period === "week") {
-    const startOfWeek = new Date();
-    const day = startOfWeek.getDay() || 7;
-    startOfWeek.setDate(startOfWeek.getDate() - day + 1);
-    startOfWeek.setHours(0, 0, 0, 0);
-    timeWhere = "AND g.created_at >= ?";
-    params.push(startOfWeek.getTime());
-  }
-
-  let valueExpr;
-  let orderExpr;
-
-  switch (metric) {
-    case "high_score":
-      valueExpr = "MAX(g.score)";
-      orderExpr = "value DESC";
-      break;
-
-    case "coins":
-      valueExpr = "MAX(u.peak_coins)";
-      orderExpr = "value DESC";
-      break;
-
-    case "games_played":
-      valueExpr = "COUNT(g.id)";
-      orderExpr = "value DESC";
-      break;
-
-    case "wins":
-      valueExpr = `
-        SUM(
-          CASE
-            WHEN g.mode = 'online' AND g.did_win = 1
-            THEN 1
-            ELSE 0
-          END
-        )
-      `;
-      orderExpr = "value DESC";
-      break;
-  }
-
-  const rows = db.prepare(`
-    SELECT
-      u.username_display AS username,
-      ${valueExpr} AS value,
-      COUNT(g.id) AS games_played,
-      AVG(g.accuracy) AS accuracy
-    FROM users u
-    JOIN games g ON g.user_id = u.id
-    WHERE 1=1
-    ${timeWhere}
-    GROUP BY u.id
-    HAVING value > 0
-    ORDER BY ${orderExpr}
-    LIMIT 50
-  `).all(...params);
-
-  res.json({
-    leaderboard: rows.map(r => ({
-      ...r,
-      username: safeDisplayUsername(r.username)
-    }))
-  });
 });
-
 
 
 app.post("/stats/commit-game", async (req, res) => {
