@@ -382,81 +382,76 @@ function refreshUserBadge(userId) {
 
 app.post("/auth/register", async (req, res) => {
   try {
-const { username, password, email } = req.body;
+    const { username, password, email } = req.body;
 
-const validationError = validateUsername(username);
-if (validationError) {
-  return res.status(400).json({ error: validationError });
-}
+    const validationError = validateUsername(username);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
+    }
 
-if (!password || !email) {
-  return res.status(400).json({ error: "Missing password or email" });
-}
+    if (!password || !email) {
+      return res.status(400).json({ error: "Missing password or email" });
+    }
 
-const usernameDisplay = username.trim();
-const usernameNorm = usernameDisplay.toLowerCase();
+    const usernameDisplay = username.trim();
+    const usernameNorm = usernameDisplay.toLowerCase();
 
+    const emailCheck = await pool.query(
+      `SELECT id FROM users WHERE lower(email) = $1`,
+      [email.toLowerCase()]
+    );
 
-    const emailExists = db
-      .prepare(`SELECT id FROM users WHERE lower(email) = ?`)
-      .get(email.toLowerCase());
-
-    if (emailExists) {
+    if (emailCheck.rows.length > 0) {
       return res.status(409).json({ error: "Email already in use" });
     }
 
-    const exists = db
-      .prepare(`SELECT id FROM users WHERE username_norm = ?`)
-      .get(usernameNorm);
+    const usernameCheck = await pool.query(
+      `SELECT id FROM users WHERE username_norm = $1`,
+      [usernameNorm]
+    );
 
-    if (exists) {
+    if (usernameCheck.rows.length > 0) {
       return res.status(409).json({ error: "Username not available" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const now = Date.now();
 
-    const info = db.prepare(`
-      INSERT INTO users
-        (username_norm, username_display, password_hash, email, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(
-  usernameNorm,
-  usernameDisplay,
-  passwordHash,
-  email,
-  now
-);
+    const insert = await pool.query(
+      `INSERT INTO users
+       (username_norm, username_display, password_hash, email, created_at)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [usernameNorm, usernameDisplay, passwordHash, email, now]
+    );
 
+    const userId = insert.rows[0].id;
 
-    const userId = Number(info.lastInsertRowid);
-
-    db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(userId);
+    await pool.query(`DELETE FROM sessions WHERE user_id = $1`, [userId]);
 
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256(token);
 
-    db.prepare(`
-      INSERT INTO sessions (user_id, token_hash, expires_at, created_at)
-      VALUES (?, ?, ?, ?)
-    `).run(userId, tokenHash, now + THIRTY_DAYS_MS, now);
+    await pool.query(
+      `INSERT INTO sessions (user_id, token_hash, expires_at, created_at)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, tokenHash, now + THIRTY_DAYS_MS, now]
+    );
 
     setSessionCookie(res, token);
 
-res.json({
-  user: {
-    id: userId,
-    username: safeDisplayUsername(usernameDisplay),
-    email,
-    games_played: 0,
-    favouriteTeam: null,
-    onboarded: false,
-    coins: 0,
-    badgeEquipped: null
-  }
-});
-
-
+    res.json({
+      user: {
+        id: userId,
+        username: safeDisplayUsername(usernameDisplay),
+        email,
+        games_played: 0,
+        favouriteTeam: null,
+        onboarded: false,
+        coins: 0,
+        badgeEquipped: null
+      }
+    });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ error: "Server error" });
@@ -473,59 +468,56 @@ app.post("/auth/login", async (req, res) => {
       return res.status(400).json({ error: "Missing username or password" });
     }
 
-    const user = db
-      .prepare(
-        `SELECT id, username_display, email, password_hash, games_played, favourite_team, onboarded, coins, badge_equipped
-         FROM users
-         WHERE username_norm = ?`
-      )
-      .get(usernameNorm);
-console.log("[LOGIN] row from DB:", {
-  id: user?.id,
-  username: user?.username_display,
-  coins: user?.coins
-});
+    const result = await pool.query(
+      `SELECT id, username_display, email, password_hash,
+              games_played, favourite_team, onboarded,
+              coins, badge_equipped
+       FROM users
+       WHERE username_norm = $1`,
+      [usernameNorm]
+    );
 
-    if (!user) return res.status(401).json({ error: "Incorrect credentials" });
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({ error: "Incorrect credentials" });
+    }
 
     const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ error: "Incorrect credentials" });
+    if (!ok) {
+      return res.status(401).json({ error: "Incorrect credentials" });
+    }
 
-    const userId = Number(user.id);
+    const userId = user.id;
     const now = Date.now();
 
-    // kick existing live socket (tab, browser, anything)
     forceLogoutUser(userId, "Logged in on another device");
 
-    // rotate session
-    db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(userId);
+    await pool.query(`DELETE FROM sessions WHERE user_id = $1`, [userId]);
 
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256(token);
 
-    db.prepare(
+    await pool.query(
       `INSERT INTO sessions (user_id, token_hash, expires_at, created_at)
-       VALUES (?, ?, ?, ?)`
-    ).run(userId, tokenHash, now + THIRTY_DAYS_MS, now);
+       VALUES ($1, $2, $3, $4)`,
+      [userId, tokenHash, now + THIRTY_DAYS_MS, now]
+    );
 
     setSessionCookie(res, token);
-console.log("[LOGIN] sending payload coins:", user.coins ?? 0);
 
-res.json({
-  user: {
-    id: userId,
-    username: safeDisplayUsername(user.username_display),
-    email: user.email,
-    games_played: user.games_played,
-    favouriteTeam: user.favourite_team ?? null,
-    onboarded: !!user.onboarded,
-    coins: user.coins ?? 0,
-    badgeEquipped: user.badge_equipped ?? null
-
-  }
-});
-
-
+    res.json({
+      user: {
+        id: userId,
+        username: safeDisplayUsername(user.username_display),
+        email: user.email,
+        games_played: user.games_played,
+        favouriteTeam: user.favourite_team ?? null,
+        onboarded: !!user.onboarded,
+        coins: user.coins ?? 0,
+        badgeEquipped: user.badge_equipped ?? null
+      }
+    });
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     res.status(500).json({ error: "Server error" });
