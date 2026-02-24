@@ -146,9 +146,12 @@ app.use(
       // Allow server-to-server & preflight
       if (!origin) return callback(null, true);
 
-      if (ALLOWED_ORIGINS.includes(origin)) {
-        return callback(null, true);
-      }
+const isAllowedVercelPreview =
+  /^https:\/\/foopy-.*-paddy-rushs-projects-4465df4f\.vercel\.app$/.test(origin);
+
+if (ALLOWED_ORIGINS.includes(origin) || isAllowedVercelPreview) {
+  return callback(null, true);
+}
 
       console.warn("❌ CORS blocked origin:", origin);
       return callback(null, false);
