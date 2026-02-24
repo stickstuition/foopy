@@ -10,7 +10,7 @@ import crypto from "crypto";
 import cookie from "cookie";
 import { BADGES } from "./engine/badges.js";
 import { Server as SocketIOServer } from "socket.io";
-import { pool, transaction } from "../db.js";
+import { pool, transaction } from "../scripts/db.js";
 
 import profanity from "leo-profanity";
 
