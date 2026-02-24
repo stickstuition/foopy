@@ -527,26 +527,19 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-app.get("/auth/me", (req, res) => {
-  const start = Date.now();
-
-  // ✅ HARD FAST EXIT: no cookie, no DB work
+app.get("/auth/me", async (req, res) => {
   const token = req.cookies?.[COOKIE_NAME];
   if (!token) {
-    console.log("[/auth/me] no cookie → 401");
     return res.status(401).json({ error: "Not logged in" });
   }
 
-  // ✅ Resolve session
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) {
-    console.log("[/auth/me] invalid/expired session → 401");
     return res.status(401).json({ error: "Not logged in" });
   }
 
-  // ✅ DB read ONLY (no writes here)
-  const user = db.prepare(`
-    SELECT
+  const result = await pool.query(
+    `SELECT
       id,
       username_display,
       email,
@@ -560,16 +553,15 @@ app.get("/auth/me", (req, res) => {
       coins,
       badge_equipped,
       badges_owned
-    FROM users
-    WHERE id = ?
-  `).get(userId);
+     FROM users
+     WHERE id = $1`,
+    [userId]
+  );
 
+  const user = result.rows[0];
   if (!user) {
-    console.warn("[/auth/me] user not found for id", userId);
     return res.status(404).json({ error: "User not found" });
   }
-
-  console.log("[/auth/me] OK in", Date.now() - start, "ms");
 
   res.json({
     user: {
@@ -591,10 +583,11 @@ app.get("/auth/me", (req, res) => {
 });
 
 
-
-app.post("/auth/onboarding", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.post("/auth/onboarding", async (req, res) => {
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
 
   const { ageRange, state, favouriteTeam } = req.body;
 
@@ -602,44 +595,43 @@ app.post("/auth/onboarding", (req, res) => {
     return res.status(400).json({ error: "Missing fields" });
   }
 
-const badgeId = TEAM_CODE_TO_BADGE_ID[favouriteTeam] ?? null;
+  const badgeId = TEAM_CODE_TO_BADGE_ID[favouriteTeam] ?? null;
 
-db.prepare(`
-  UPDATE users
-  SET
-    age_range = ?,
-    state = ?,
-    favourite_team = ?,
-    badge_equipped = ?,
-    badges_owned = ?,
-    onboarded = 1
-  WHERE id = ?
-`).run(
-  ageRange,
-  state,
-  favouriteTeam,
-  badgeId,
-  badgeId ? JSON.stringify([badgeId]) : JSON.stringify([]),
-  userId
-);
-
-
+  await pool.query(
+    `UPDATE users
+     SET age_range = $1,
+         state = $2,
+         favourite_team = $3,
+         badge_equipped = $4,
+         badges_owned = $5,
+         onboarded = TRUE
+     WHERE id = $6`,
+    [
+      ageRange,
+      state,
+      favouriteTeam,
+      badgeId,
+      badgeId ? JSON.stringify([badgeId]) : JSON.stringify([]),
+      userId
+    ]
+  );
 
   res.json({
     ok: true,
-    badge: {
-      type: "team",
-      team: favouriteTeam
-    }
+    badge: { type: "team", team: favouriteTeam }
   });
 });
 
-app.post("/auth/logout", (req, res) => {
-  const token = req.cookies[COOKIE_NAME];
-  const session = getSessionFromToken(token);
+app.post("/auth/logout", async (req, res) => {
+  const token = req.cookies?.[COOKIE_NAME];
+  const session = await getSessionFromToken(token);
 
   if (session) {
-    db.prepare(`DELETE FROM sessions WHERE token_hash = ?`).run(session.token_hash);
+    await pool.query(
+      `DELETE FROM sessions WHERE token_hash = $1`,
+      [session.token_hash]
+    );
+
     forceLogoutUser(session.user_id, "Logged out");
   }
 
@@ -648,7 +640,7 @@ app.post("/auth/logout", (req, res) => {
 });
 
 app.post("/auth/change-password", async (req, res) => {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) {
     return res.status(401).json({ error: "Not logged in" });
   }
@@ -659,10 +651,12 @@ app.post("/auth/change-password", async (req, res) => {
     return res.status(400).json({ error: "Invalid password" });
   }
 
-  const user = db.prepare(
-    `SELECT password_hash FROM users WHERE id = ?`
-  ).get(userId);
+  const result = await pool.query(
+    `SELECT password_hash FROM users WHERE id = $1`,
+    [userId]
+  );
 
+  const user = result.rows[0];
   if (!user) {
     return res.status(401).json({ error: "User not found" });
   }
@@ -674,22 +668,25 @@ app.post("/auth/change-password", async (req, res) => {
 
   const newHash = await bcrypt.hash(newPassword, 10);
 
-  db.prepare(
-    `UPDATE users SET password_hash = ? WHERE id = ?`
-  ).run(newHash, userId);
+  await pool.query(
+    `UPDATE users SET password_hash = $1 WHERE id = $2`,
+    [newHash, userId]
+  );
 
-  // 🔒 Kill all other sessions
-  db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(userId);
+  await pool.query(
+    `DELETE FROM sessions WHERE user_id = $1`,
+    [userId]
+  );
 
-  // Create fresh session
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = sha256(token);
   const now = Date.now();
 
-  db.prepare(
+  await pool.query(
     `INSERT INTO sessions (user_id, token_hash, expires_at, created_at)
-     VALUES (?, ?, ?, ?)`
-  ).run(userId, tokenHash, now + THIRTY_DAYS_MS, now);
+     VALUES ($1, $2, $3, $4)`,
+    [userId, tokenHash, now + THIRTY_DAYS_MS, now]
+  );
 
   setSessionCookie(res, token);
 
