@@ -7,11 +7,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import Database from "better-sqlite3";
 import cookie from "cookie";
 import { BADGES } from "./engine/badges.js";
 import { Server as SocketIOServer } from "socket.io";
-
+import { pool, transaction } from "./db.js";
 
 import profanity from "leo-profanity";
 
@@ -113,7 +112,6 @@ const app = express();
 app.set("trust proxy", 1);
 
 const server = http.createServer(app);
-const db = new Database("foopy.sqlite");
 
 
 /*
@@ -186,114 +184,6 @@ const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const WIN_SCORE = 5;
 const ROUND_SECONDS = 20;
 
-/* ---------- DB SCHEMA ---------- */
-
-db.exec(`
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username_norm TEXT NOT NULL UNIQUE,
-  username_display TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
-  games_played INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  token_hash TEXT NOT NULL,
-  expires_at INTEGER NOT NULL,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS password_resets (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  token_hash TEXT NOT NULL,
-  expires_at INTEGER NOT NULL,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id)
-);
-`);
-
-db.exec(`
-CREATE TABLE IF NOT EXISTS games (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  mode TEXT NOT NULL,
-  score INTEGER NOT NULL,
-  correct INTEGER NOT NULL,
-  attempted INTEGER NOT NULL,
-  accuracy REAL,
-  longest_streak INTEGER NOT NULL,
-  duration INTEGER NOT NULL,
-  coins_earned INTEGER NOT NULL,
-  created_at INTEGER NOT NULL,
-  week_key TEXT NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id)
-);
-`);
-
-
-db.exec(`
-CREATE TABLE IF NOT EXISTS records (
-  key TEXT PRIMARY KEY,
-  value INTEGER NOT NULL,
-  user_id INTEGER NOT NULL,
-  game_id INTEGER,
-  achieved_at INTEGER NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(game_id) REFERENCES games(id)
-);
-`);
-
-
-
-/* ---------- DB MIGRATIONS (ONBOARDING FIELDS) ---------- */
-
-function safeAddColumn(sql) {
-  try {
-    db.exec(sql);
-  } catch {
-    // ignore "duplicate column name" etc.
-  }
-}
-
-safeAddColumn(`ALTER TABLE users ADD COLUMN age_range TEXT;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN state TEXT;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN favourite_team TEXT;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN onboarded INTEGER NOT NULL DEFAULT 0;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN badge_equipped TEXT;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN coins INTEGER NOT NULL DEFAULT 0;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN email TEXT;`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN badges_owned TEXT;`);
-
-
-// ---------- STATS FIELDS ----------
-
-safeAddColumn(`ALTER TABLE users ADD COLUMN wins INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN losses INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN high_score INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN longest_streak INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN total_time_played INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN coins_earned INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN coins_spent INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN peak_coins INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN challenges_completed INTEGER NOT NULL DEFAULT 0`);
-safeAddColumn(`ALTER TABLE users ADD COLUMN accuracy REAL`);
-// ---------- GAME RESULT FIELD ----------
-safeAddColumn(`ALTER TABLE games ADD COLUMN did_win INTEGER`);
-safeAddColumn(`ALTER TABLE games ADD COLUMN opponent_name TEXT`);
-safeAddColumn(`ALTER TABLE games ADD COLUMN opponent_score INTEGER`);
-
-
-
-
-
-
-/* ---------- HELPERS ---------- */
-
 
 /* ---------- USERNAME VALIDATION ---------- */
 
@@ -364,22 +254,21 @@ function clearSessionCookie(res) {
 
 
 
-function getSessionFromToken(token) {
+async function getSessionFromToken(token) {
   if (!token) return null;
 
   try {
     const tokenHash = sha256(token);
     const now = Date.now();
 
-    const session = db
-      .prepare(
-        `SELECT user_id, token_hash
-         FROM sessions
-         WHERE token_hash = ? AND expires_at > ?`
-      )
-      .get(tokenHash, now);
+    const result = await pool.query(
+      `SELECT user_id, token_hash
+       FROM sessions
+       WHERE token_hash = $1 AND expires_at > $2`,
+      [tokenHash, now]
+    );
 
-    return session || null;
+    return result.rows[0] || null;
   } catch (err) {
     console.error("[SESSION LOOKUP ERROR]", err);
     return null;
@@ -387,22 +276,22 @@ function getSessionFromToken(token) {
 }
 
 
-function getUserIdFromRequest(req) {
+async function getUserIdFromRequest(req) {
   if (!req.cookies) return null;
 
   const token = req.cookies[COOKIE_NAME];
   if (!token) return null;
 
-  const session = getSessionFromToken(token);
+  const session = await getSessionFromToken(token);
   return session ? session.user_id : null;
 }
 
 
-function getSessionFromCookieHeader(cookieHeader) {
+async function getSessionFromCookieHeader(cookieHeader) {
   if (!cookieHeader) return null;
   const cookies = cookie.parse(cookieHeader);
   const token = cookies[COOKIE_NAME];
-  return getSessionFromToken(token);
+  return await getSessionFromToken(token);
 }
 
 function parseBadgesOwned(raw) {
