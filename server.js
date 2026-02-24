@@ -150,12 +150,15 @@ app.use(
 const isAllowedVercelPreview =
   /^https:\/\/foopy-.*-paddy-rushs-projects-4465df4f\.vercel\.app$/.test(origin);
 
-if (ALLOWED_ORIGINS.includes(origin) || isAllowedVercelPreview) {
+const isAllowedVercelProd =
+  /^https:\/\/foopy\.vercel\.app$/.test(origin); // change if your prod domain differs
+
+if (ALLOWED_ORIGINS.includes(origin) || isAllowedVercelPreview || isAllowedVercelProd) {
   return callback(null, true);
 }
 
-      console.warn("❌ CORS blocked origin:", origin);
-      return callback(null, false);
+console.warn("❌ CORS blocked origin:", origin);
+return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -354,16 +357,13 @@ function forceLogoutUser(userId, reason = "Logged in on another device") {
 /*
   Validates that THIS socket's specific session token_hash is still valid.
 */
-function isSocketSessionStillValid(socket) {
+async function isSocketSessionStillValid(socket) {
   const now = Date.now();
-  const row = db
-    .prepare(
-      `SELECT 1 FROM sessions
-       WHERE token_hash = ? AND expires_at > ?`
-    )
-    .get(socket.sessionTokenHash, now);
-
-  return !!row;
+  const { rows } = await pool.query(
+    `SELECT 1 FROM sessions WHERE token_hash = $1 AND expires_at > $2`,
+    [socket.sessionTokenHash, now]
+  );
+  return rows.length > 0;
 }
 
 function refreshUserBadge(userId) {
@@ -1285,23 +1285,28 @@ const io = new SocketIOServer(server, {
   }
 });
 
-io.use((socket, next) => {
-  const session = getSessionFromCookieHeader(socket.handshake.headers.cookie);
-  if (!session) return next(new Error("Not authenticated"));
+io.use(async (socket, next) => {
+  try {
+    const session = await getSessionFromCookieHeader(socket.handshake.headers.cookie);
+    if (!session) return next(new Error("Not authenticated"));
 
-  socket.userId = session.user_id;
-  socket.sessionTokenHash = session.token_hash;
+    socket.userId = session.user_id;
+    socket.sessionTokenHash = session.token_hash;
 
-  const user = db.prepare(`
-    SELECT username_display, badge_equipped
-    FROM users
-    WHERE id = ?
-  `).get(socket.userId);
+    const { rows } = await pool.query(
+      `SELECT username_display, badge_equipped FROM users WHERE id = $1`,
+      [socket.userId]
+    );
 
-  socket.username = safeDisplayUsername(user?.username_display);
-  socket.badgeEquipped = user?.badge_equipped ?? null;
+    const user = rows[0];
+    socket.username = safeDisplayUsername(user?.username_display);
+    socket.badgeEquipped = user?.badge_equipped ?? null;
 
-  next();
+    next();
+  } catch (err) {
+    console.error("[socket auth] error:", err);
+    next(new Error("Not authenticated"));
+  }
 });
 
 
@@ -1549,13 +1554,19 @@ io.on("connection", (socket) => {
   activeSocketByUser.set(socket.userId, socket);
 
   // If session token_hash is rotated or expired, kick immediately.
-  socket.onAny(() => {
-    if (!isSocketSessionStillValid(socket)) {
+socket.onAny(async () => {
+  try {
+    const ok = await isSocketSessionStillValid(socket);
+    if (!ok) {
       console.warn("❌ Session rotated or expired, kicking socket:", socket.id);
       socket.emit("force-logout", { reason: "Logged in on another device" });
       socket.disconnect(true);
     }
-  });
+  } catch (e) {
+    console.error("[socket session check] failed:", e);
+    socket.disconnect(true);
+  }
+});
 
 socket.on("set-wager", ({ roomCode, amount }) => {
   const room = rooms[roomCode];
