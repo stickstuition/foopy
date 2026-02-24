@@ -1065,149 +1065,184 @@ app.get("/leaderboard", (req, res) => {
 
 
 
-app.post("/stats/commit-game", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.post("/stats/commit-game", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
 
-  const {
-    mode,                 // "timed" | "online"
-    score,
-    correct,
-    attempted,
-    longestStreak,
-    duration,
-    coinsEarned,
-    didWin                // boolean | null
-  } = req.body;
+    const {
+      mode, // "timed" | "online"
+      score,
+      correct,
+      attempted,
+      longestStreak,
+      duration,
+      coinsEarned,
+      didWin // boolean | null
+    } = req.body;
 
-  // ---------- HARD VALIDATION ----------
-  if (
-    !mode ||
-    !Number.isFinite(score) ||
-    !Number.isFinite(correct) ||
-    !Number.isFinite(attempted) ||
-    !Number.isFinite(longestStreak) ||
-    !Number.isFinite(duration) ||
-    !Number.isFinite(coinsEarned)
-  ) {
-    return res.status(400).json({ error: "Invalid payload" });
-  }
-
-  const accuracy = attempted === 0 ? null : correct / attempted;
-  const now = Date.now();
-  const weekKey = getWeekKey(now);
-
-// ---- PREVIOUS USER ACCURACY (for weighted average) ----
-const prev = db.prepare(`
-  SELECT games_played, accuracy
-  FROM users
-  WHERE id = ?
-`).get(userId);
-
-const prevGames = prev?.games_played ?? 0;
-const prevAccuracy = prev?.accuracy ?? null;
-
-const newAccuracy =
-  prevAccuracy == null
-    ? accuracy
-    : ((prevAccuracy * prevGames) + accuracy) / (prevGames + 1);
-
-
-  const tx = db.transaction(() => {
-    // 1. Insert immutable game row
-const result = db.prepare(`
-  INSERT INTO games (
-    user_id,
-    mode,
-    score,
-    correct,
-    attempted,
-    accuracy,
-    longest_streak,
-    duration,
-    coins_earned,
-    created_at,
-    week_key,
-    did_win
-  )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`).run(
-  userId,
-  mode,
-  score,
-  correct,
-  attempted,
-  accuracy,
-  longestStreak,
-  duration,
-  coinsEarned,
-  now,
-  weekKey,
-  mode === "online" ? (didWin === true ? 1 : 0) : null
-);
-;
-
-    const gameId = result.lastInsertRowid;
-
-const currentCoins = db
-  .prepare(`SELECT coins FROM users WHERE id = ?`)
-  .get(userId)?.coins ?? 0;
-
-db.prepare(`
-  UPDATE users SET
-    games_played = games_played + 1,
-    wins = wins + ?,
-    losses = losses + ?,
-    high_score = MAX(high_score, ?),
-    longest_streak = MAX(longest_streak, ?),
-    total_time_played = total_time_played + ?,
-    coins = coins + ?,
-    coins_earned = coins_earned + ?,
-    peak_coins = MAX(peak_coins, ?),
-    accuracy = ?
-  WHERE id = ?
-`).run(
-  didWin === true ? 1 : 0,
-  didWin === false ? 1 : 0,
-  score,
-  longestStreak,
-  duration,
-  coinsEarned,
-  coinsEarned,
-  currentCoins + coinsEarned,
-  newAccuracy,
-  userId
-);
-
-
-
-    // 3. Update RECORDS (safe overwrite only if better)
-
-    function upsertRecord(key, value) {
-      const row = db
-        .prepare(`SELECT value FROM records WHERE key = ?`)
-        .get(key);
-
-      if (!row || value > row.value) {
-        db.prepare(`
-          INSERT INTO records (key, value, user_id, game_id, achieved_at)
-          VALUES (?, ?, ?, ?, ?)
-          ON CONFLICT(key) DO UPDATE SET
-            value = excluded.value,
-            user_id = excluded.user_id,
-            game_id = excluded.game_id,
-            achieved_at = excluded.achieved_at
-        `).run(key, value, userId, gameId, now);
-      }
+    // ---------- HARD VALIDATION ----------
+    if (
+      !mode ||
+      !Number.isFinite(score) ||
+      !Number.isFinite(correct) ||
+      !Number.isFinite(attempted) ||
+      !Number.isFinite(longestStreak) ||
+      !Number.isFinite(duration) ||
+      !Number.isFinite(coinsEarned)
+    ) {
+      return res.status(400).json({ error: "Invalid payload" });
     }
 
-    upsertRecord("highest_single_game_score", score);
-    upsertRecord("longest_streak", longestStreak);
-    upsertRecord("most_coins_held", currentCoins + coinsEarned);
-  });
+    const accuracy = attempted === 0 ? null : correct / attempted;
+    const now = Date.now();
+    const weekKey = getWeekKey(now);
 
-  try {
-    tx();
+    await transaction(async (client) => {
+      // Lock user row to avoid race conditions when updating stats/coins
+      const userRes = await client.query(
+        `
+        SELECT games_played, accuracy, coins
+        FROM users
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+
+      if (userRes.rows.length === 0) {
+        throw new Error("User not found in users table");
+      }
+
+      const prevGames = Number(userRes.rows[0].games_played ?? 0);
+      const prevAccuracy =
+        userRes.rows[0].accuracy === null || userRes.rows[0].accuracy === undefined
+          ? null
+          : Number(userRes.rows[0].accuracy);
+
+      const currentCoins = Number(userRes.rows[0].coins ?? 0);
+
+      const newAccuracy =
+        prevAccuracy == null
+          ? accuracy
+          : accuracy == null
+            ? prevAccuracy
+            : ((prevAccuracy * prevGames) + accuracy) / (prevGames + 1);
+
+      // 1) Insert immutable game row
+      const gameInsert = await client.query(
+        `
+        INSERT INTO games (
+          user_id,
+          mode,
+          score,
+          correct,
+          attempted,
+          accuracy,
+          longest_streak,
+          duration,
+          coins_earned,
+          created_at,
+          week_key,
+          did_win
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        RETURNING id
+        `,
+        [
+          userId,
+          mode,
+          score,
+          correct,
+          attempted,
+          accuracy,
+          longestStreak,
+          duration,
+          coinsEarned,
+          now,
+          weekKey,
+          mode === "online" ? (didWin === true ? true : false) : null
+        ]
+      );
+
+      const gameId = gameInsert.rows[0].id;
+
+      // 2) Update user aggregate stats
+      // Note: uses GREATEST for highs/peaks
+      const winInc = didWin === true ? 1 : 0;
+      const lossInc = didWin === false ? 1 : 0;
+      const nextCoins = currentCoins + coinsEarned;
+
+      await client.query(
+        `
+        UPDATE users SET
+          games_played = games_played + 1,
+          wins = COALESCE(wins, 0) + $1,
+          losses = COALESCE(losses, 0) + $2,
+          high_score = GREATEST(COALESCE(high_score, 0), $3),
+          longest_streak = GREATEST(COALESCE(longest_streak, 0), $4),
+          total_time_played = COALESCE(total_time_played, 0) + $5,
+          coins = COALESCE(coins, 0) + $6,
+          coins_earned = COALESCE(coins_earned, 0) + $6,
+          peak_coins = GREATEST(COALESCE(peak_coins, 0), $7),
+          accuracy = $8
+        WHERE id = $9
+        `,
+        [
+          winInc,
+          lossInc,
+          score,
+          longestStreak,
+          duration,
+          coinsEarned,
+          nextCoins,
+          newAccuracy,
+          userId
+        ]
+      );
+
+      // 3) Records upsert (no ON CONFLICT needed)
+      // We store "best ever" per-user per-key.
+      async function upsertRecord(key, value) {
+        const existing = await client.query(
+          `
+          SELECT value
+          FROM records
+          WHERE user_id = $1 AND key = $2
+          `,
+          [userId, key]
+        );
+
+        const shouldWrite =
+          existing.rows.length === 0 || Number(value) > Number(existing.rows[0].value);
+
+        if (!shouldWrite) return;
+
+        if (existing.rows.length === 0) {
+          await client.query(
+            `
+            INSERT INTO records (key, value, user_id, game_id, achieved_at)
+            VALUES ($1,$2,$3,$4,$5)
+            `,
+            [key, value, userId, gameId, now]
+          );
+        } else {
+          await client.query(
+            `
+            UPDATE records
+            SET value = $1, game_id = $2, achieved_at = $3
+            WHERE user_id = $4 AND key = $5
+            `,
+            [value, gameId, now, userId, key]
+          );
+        }
+      }
+
+      await upsertRecord("highest_single_game_score", score);
+      await upsertRecord("longest_streak", longestStreak);
+      await upsertRecord("most_coins_held", nextCoins);
+    });
+
     res.json({ ok: true });
   } catch (err) {
     console.error("COMMIT GAME FAILED:", err);
