@@ -694,51 +694,49 @@ app.post("/auth/change-password", async (req, res) => {
 });
 
 app.post("/auth/forgot-password", async (req, res) => {
-  const { identifier } = req.body; // username OR email
+  try {
+    const { identifier } = req.body; // username OR email
+    if (!identifier) {
+      return res.status(400).json({ error: "Missing identifier" });
+    }
 
-  if (!identifier) {
-    return res.status(400).json({ error: "Missing identifier" });
-  }
+    const idNorm = identifier.toLowerCase().trim();
 
-  const idNorm = identifier.toLowerCase().trim();
+    // Find user by username_norm OR email
+    const { rows } = await pool.query(
+      `
+      SELECT id, email
+      FROM users
+      WHERE username_norm = $1 OR lower(email) = $1
+      LIMIT 1
+      `,
+      [idNorm]
+    );
 
-  const user = db.prepare(`
-  SELECT id, email
-  FROM users
-  WHERE username_norm = ? OR lower(email) = ?
-`).get(idNorm, idNorm);
+    // Do NOT reveal if user exists
+    const user = rows[0];
+    if (!user) return res.json({ ok: true });
 
+    // Clear old reset tokens
+    await pool.query(`DELETE FROM password_resets WHERE user_id = $1`, [user.id]);
 
-  // Do NOT reveal if user exists
-  if (!user) {
-    return res.json({ ok: true });
-  }
+    const rawToken = crypto.randomBytes(20).toString("hex");
+    const tokenHash = sha256(rawToken);
+    const now = Date.now();
 
-  // Clear old reset tokens
-  db.prepare(`DELETE FROM password_resets WHERE user_id = ?`)
-    .run(user.id);
+    await pool.query(
+      `
+      INSERT INTO password_resets (user_id, token_hash, expires_at, created_at)
+      VALUES ($1, $2, $3, $4)
+      `,
+      [user.id, tokenHash, now + RESET_TOKEN_TTL_MS, now]
+    );
 
-  const rawToken = crypto.randomBytes(20).toString("hex");
-  const tokenHash = sha256(rawToken);
-  const now = Date.now();
-
-  db.prepare(`
-    INSERT INTO password_resets
-      (user_id, token_hash, expires_at, created_at)
-    VALUES (?, ?, ?, ?)
-  `).run(
-    user.id,
-    tokenHash,
-    now + RESET_TOKEN_TTL_MS,
-    now
-  );
-
-  // ⚠️ v1 ONLY: return token to client
-await mailer.sendMail({
-  from: '"Foopy" <foopygame@gmail.com>',
-  to: user.email,
-  subject: "Reset your Foopy password",
-  text: `
+    await mailer.sendMail({
+      from: '"Foopy" <foopygame@gmail.com>',
+      to: user.email,
+      subject: "Reset your Foopy password",
+      text: `
 You requested a password reset for your Foopy account.
 
 Your reset token is:
@@ -749,53 +747,65 @@ This token expires in 30 minutes.
 
 If you did not request this, ignore this email.
 `
-});
+    });
 
-res.json({ ok: true });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("FORGOT PASSWORD ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 
 app.post("/auth/reset-password", async (req, res) => {
-  const { token, newPassword } = req.body;
+  try {
+    const { token, newPassword } = req.body;
 
-  if (!token || !newPassword || newPassword.length < 8) {
-    return res.status(400).json({ error: "Invalid request" });
+    if (!token || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    const tokenHash = sha256(token);
+    const now = Date.now();
+
+    // Find valid reset token
+    const { rows } = await pool.query(
+      `
+      SELECT user_id
+      FROM password_resets
+      WHERE token_hash = $1 AND expires_at > $2
+      LIMIT 1
+      `,
+      [tokenHash, now]
+    );
+
+    const row = rows[0];
+    if (!row) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+
+    // Do it atomically
+    await transaction(async (client) => {
+      await client.query(
+        `UPDATE users SET password_hash = $1 WHERE id = $2`,
+        [newHash, row.user_id]
+      );
+
+      // Burn reset tokens
+      await client.query(`DELETE FROM password_resets WHERE user_id = $1`, [row.user_id]);
+
+      // Kill all sessions
+      await client.query(`DELETE FROM sessions WHERE user_id = $1`, [row.user_id]);
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("RESET PASSWORD ERROR:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  const tokenHash = sha256(token);
-  const now = Date.now();
-
-  const row = db.prepare(`
-    SELECT user_id
-    FROM password_resets
-    WHERE token_hash = ? AND expires_at > ?
-  `).get(tokenHash, now);
-
-  if (!row) {
-    return res.status(400).json({ error: "Invalid or expired token" });
-  }
-
-  const newHash = await bcrypt.hash(newPassword, 10);
-
-  db.prepare(`
-    UPDATE users
-    SET password_hash = ?
-    WHERE id = ?
-  `).run(newHash, row.user_id);
-
-  // Burn token
-  db.prepare(`DELETE FROM password_resets WHERE user_id = ?`)
-    .run(row.user_id);
-
-  // Kill all sessions
-  db.prepare(`DELETE FROM sessions WHERE user_id = ?`)
-    .run(row.user_id);
-
-  res.json({ ok: true });
 });
-
-
-
 
 app.post("/stats/game-complete", (req, res) => {
   const userId = getUserIdFromRequest(req);
