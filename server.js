@@ -807,66 +807,105 @@ app.post("/auth/reset-password", async (req, res) => {
   }
 });
 
-app.post("/stats/game-complete", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.post("/stats/game-complete", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
 
-  db.prepare(`UPDATE users SET games_played = games_played + 1 WHERE id = ?`).run(userId);
-  res.json({ ok: true });
-});
+    await pool.query(
+      `UPDATE users SET games_played = games_played + 1 WHERE id = $1`,
+      [userId]
+    );
 
-app.post("/stats/award-coins", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
-
-  const coinsToAdd = Number(req.body?.coins ?? 0);
-  if (!Number.isFinite(coinsToAdd) || coinsToAdd <= 0) {
-    return res.status(400).json({ error: "Invalid coins amount" });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("STATS GAME-COMPLETE ERROR:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  db.prepare(`UPDATE users SET coins = coins + ? WHERE id = ?`).run(coinsToAdd, userId);
-
-  const row = db.prepare(`SELECT coins FROM users WHERE id = ?`).get(userId);
-
-  res.json({ ok: true, coins: row?.coins ?? 0 });
 });
 
-app.get("/stats/summary", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.post("/stats/award-coins", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
 
-  const row = db.prepare(`
-    SELECT
-      games_played,
-      wins,
-      losses,
-      high_score,
-      longest_streak,
-      total_time_played,
-      coins_earned,
-      coins_spent,
-      peak_coins,
-      challenges_completed,
-      accuracy
-    FROM users
-    WHERE id = ?
-  `).get(userId);
+    const coinsToAdd = Number(req.body?.coins ?? 0);
+    if (!Number.isFinite(coinsToAdd) || coinsToAdd <= 0) {
+      return res.status(400).json({ error: "Invalid coins amount" });
+    }
 
-  res.json({ stats: row });
+    const { rows } = await pool.query(
+      `
+      UPDATE users
+      SET
+        coins = coins + $1,
+        coins_earned = COALESCE(coins_earned, 0) + $1,
+        peak_coins = GREATEST(COALESCE(peak_coins, 0), coins + $1)
+      WHERE id = $2
+      RETURNING coins
+      `,
+      [coinsToAdd, userId]
+    );
+
+    res.json({ ok: true, coins: rows[0]?.coins ?? 0 });
+  } catch (err) {
+    console.error("STATS AWARD-COINS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
-app.get("/stats/records", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.get("/stats/summary", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
 
-  const rows = db.prepare(`
-    SELECT key, value, achieved_at
-    FROM records
-    WHERE user_id = ?
-    ORDER BY achieved_at DESC
-  `).all(userId);
+    const { rows } = await pool.query(
+      `
+      SELECT
+        games_played,
+        wins,
+        losses,
+        high_score,
+        longest_streak,
+        total_time_played,
+        coins_earned,
+        coins_spent,
+        peak_coins,
+        challenges_completed,
+        accuracy
+      FROM users
+      WHERE id = $1
+      `,
+      [userId]
+    );
 
-  res.json({ records: rows });
+    res.json({ stats: rows[0] ?? null });
+  } catch (err) {
+    console.error("STATS SUMMARY ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/stats/records", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
+
+    const { rows } = await pool.query(
+      `
+      SELECT key, value, achieved_at
+      FROM records
+      WHERE user_id = $1
+      ORDER BY achieved_at DESC
+      `,
+      [userId]
+    );
+
+    res.json({ records: rows });
+  } catch (err) {
+    console.error("STATS RECORDS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 app.get("/leaderboard/global", (req, res) => {
@@ -890,47 +929,52 @@ app.get("/leaderboard/global", (req, res) => {
   });
 });
 
-app.get("/stats/recent-games", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.get("/stats/recent-games", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
 
-  const rows = db.prepare(`
-SELECT
-  mode,
-  score,
-  did_win,
-  opponent_name,
-  opponent_score,
-  created_at
+    const { rows } = await pool.query(
+      `
+      SELECT
+        mode,
+        score,
+        did_win,
+        opponent_name,
+        opponent_score,
+        created_at
+      FROM games
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 10
+      `,
+      [userId]
+    );
 
-    FROM games
-    WHERE user_id = ?
-    ORDER BY created_at DESC
-    LIMIT 10
-  `).all(userId);
-
-res.json({
-  games: rows.map(g => ({
-    mode: g.mode,
-    score: g.score,
-    opponent: g.mode === "online" ? g.opponent_name : null,
-    opponentScore: g.mode === "online" ? g.opponent_score : null,
-    result:
-      g.mode === "online"
-        ? g.did_win === 1
-          ? "WIN"
-          : "LOSS"
-        : null,
-    date: new Date(g.created_at).toLocaleDateString("en-AU", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    })
-  }))
+    res.json({
+      games: rows.map((g) => ({
+        mode: g.mode,
+        score: g.score,
+        opponent: g.mode === "online" ? g.opponent_name : null,
+        opponentScore: g.mode === "online" ? g.opponent_score : null,
+        result:
+          g.mode === "online"
+            ? g.did_win === true || g.did_win === 1
+              ? "WIN"
+              : "LOSS"
+            : null,
+        date: new Date(Number(g.created_at)).toLocaleDateString("en-AU", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        })
+      }))
+    });
+  } catch (err) {
+    console.error("STATS RECENT-GAMES ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
-
-});
-
 
 app.get("/leaderboard", (req, res) => {
   const metric = req.query.metric || "high_score";
