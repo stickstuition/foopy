@@ -1879,7 +1879,7 @@ socket.on("start-match", ({ roomCode }) => {
     startQuestionStage(roomCode, team);
   });
 
-  socket.on("submit-guess", ({ guess }) => {
+  socket.on("submit-guess", async ({ guess }) => {
     const roomCode = socket.data.roomCode;
     const room = rooms[roomCode];
     if (!room) return;
@@ -1909,7 +1909,7 @@ socket.on("start-match", ({ roomCode }) => {
       team: room.currentQuestion.team
     });
 
-    setTimeout(() => {
+    setTimeout(async () => {
       room.scores[role] += 1;
       room.selector = role;
 
@@ -1927,93 +1927,103 @@ if (gameOver) {
   const now = Date.now();
   const weekKey = getWeekKey(now);
 
-  const tx = db.transaction(() => {
-    // ----- INSERT HOST GAME -----
-    db.prepare(`
-      INSERT INTO games (
-        user_id,
-        mode,
-        score,
-        correct,
-        attempted,
-        accuracy,
-        longest_streak,
-        duration,
-        coins_earned,
-        created_at,
-        week_key,
-        did_win,
-        opponent_name,
-        opponent_score
-      )
-      VALUES (?, 'online', ?, 0, 0, NULL, 0, 0, 0, ?, ?, ?, ?, ?)
-    `).run(
+  await transaction(async (client) => {
+  const now = Date.now();
+  const weekKey = getWeekKey(now);
+
+  const hostWon = winnerRole === "host";
+  const guestWon = winnerRole === "guest";
+
+  // Insert host game
+  await client.query(
+    `
+    INSERT INTO games (
+      user_id,
+      mode,
+      score,
+      correct,
+      attempted,
+      accuracy,
+      longest_streak,
+      duration,
+      coins_earned,
+      created_at,
+      week_key,
+      did_win,
+      opponent_name,
+      opponent_score
+    )
+    VALUES ($1,'online',$2,0,0,NULL,0,0,0,$3,$4,$5,$6,$7)
+    `,
+    [
       hostUserId,
       hostScore,
       now,
       weekKey,
-      winnerRole === "host" ? 1 : 0,
+      hostWon,
       room.guestProfile.username,
       guestScore
-    );
+    ]
+  );
 
-    // ----- INSERT GUEST GAME -----
-    db.prepare(`
-      INSERT INTO games (
-        user_id,
-        mode,
-        score,
-        correct,
-        attempted,
-        accuracy,
-        longest_streak,
-        duration,
-        coins_earned,
-        created_at,
-        week_key,
-        did_win,
-        opponent_name,
-        opponent_score
-      )
-      VALUES (?, 'online', ?, 0, 0, NULL, 0, 0, 0, ?, ?, ?, ?, ?)
-    `).run(
+  // Insert guest game
+  await client.query(
+    `
+    INSERT INTO games (
+      user_id,
+      mode,
+      score,
+      correct,
+      attempted,
+      accuracy,
+      longest_streak,
+      duration,
+      coins_earned,
+      created_at,
+      week_key,
+      did_win,
+      opponent_name,
+      opponent_score
+    )
+    VALUES ($1,'online',$2,0,0,NULL,0,0,0,$3,$4,$5,$6,$7)
+    `,
+    [
       guestUserId,
       guestScore,
       now,
       weekKey,
-      winnerRole === "guest" ? 1 : 0,
+      guestWon,
       room.hostProfile.username,
       hostScore
-    );
+    ]
+  );
 
-    // ----- UPDATE HOST USER STATS -----
-    db.prepare(`
-      UPDATE users SET
-        games_played = games_played + 1,
-        wins = wins + ?,
-        losses = losses + ?
-      WHERE id = ?
-    `).run(
-      winnerRole === "host" ? 1 : 0,
-      winnerRole === "host" ? 0 : 1,
-      hostUserId
-    );
+  // Update host stats
+  await client.query(
+    `
+    UPDATE users
+    SET
+      games_played = games_played + 1,
+      wins = COALESCE(wins,0) + $1,
+      losses = COALESCE(losses,0) + $2
+    WHERE id = $3
+    `,
+    [hostWon ? 1 : 0, hostWon ? 0 : 1, hostUserId]
+  );
 
-    // ----- UPDATE GUEST USER STATS -----
-    db.prepare(`
-      UPDATE users SET
-        games_played = games_played + 1,
-        wins = wins + ?,
-        losses = losses + ?
-      WHERE id = ?
-    `).run(
-      winnerRole === "guest" ? 1 : 0,
-      winnerRole === "guest" ? 0 : 1,
-      guestUserId
-    );
-  });
-
-  tx();
+  // Update guest stats
+  await client.query(
+    `
+    UPDATE users
+    SET
+      games_played = games_played + 1,
+      wins = COALESCE(wins,0) + $1,
+      losses = COALESCE(losses,0) + $2
+    WHERE id = $3
+    `,
+    [guestWon ? 1 : 0, guestWon ? 0 : 1, guestUserId]
+  );
+});
 
   room.stage = "gameover";
 
@@ -2064,7 +2074,7 @@ startTeamStage(roomCode);
 
     setTimeout(() => resolveRound(roomCode, null), 3000);
   });
-socket.on("leave-room", () => {
+socket.on("leave-room", async () => {
   const roomCode = socket.data.roomCode;
   if (!roomCode) return;
 
@@ -2098,19 +2108,17 @@ socket.on("leave-room", () => {
         const loserUserId =
           role === "host" ? room.hostUserId : room.guestUserId;
 
-        const tx = db.transaction(() => {
-          db.prepare(`
-            UPDATE users SET coins = coins - ?
-            WHERE id = ?
-          `).run(wagerAmount, loserUserId);
+        await transaction(async (client) => {
+  await client.query(
+    `UPDATE users SET coins = coins - $1 WHERE id = $2`,
+    [wagerAmount, loserUserId]
+  );
 
-          db.prepare(`
-            UPDATE users SET coins = coins + ?
-            WHERE id = ?
-          `).run(wagerAmount, winnerUserId);
-        });
-
-        tx();
+  await client.query(
+    `UPDATE users SET coins = coins + $1 WHERE id = $2`,
+    [wagerAmount, winnerUserId]
+  );
+});
       }
     }
 
@@ -2128,7 +2136,7 @@ socket.on("leave-room", () => {
 
     emitState(roomCode);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       delete rooms[roomCode];
     }, 5000);
 
@@ -2141,7 +2149,7 @@ socket.on("leave-room", () => {
 });
 
 
-socket.on("disconnect", () => {
+socket.on("disconnect", async () => {
   console.log("🔴 Socket disconnected:", socket.id);
 console.log("DISCONNECT HANDLER FIRED", socket.id);
 
@@ -2188,29 +2196,26 @@ console.log("Match stage:", room.stage);
           const loserUserId =
             leaverRole === "host" ? room.hostUserId : room.guestUserId;
 
-          const tx = db.transaction(() => {
+await transaction(async (client) => {
+  const { rows } = await client.query(
+    `SELECT coins FROM users WHERE id = $1`,
+    [loserUserId]
+  );
 
-            const loserCoins = db.prepare(`
-              SELECT coins FROM users WHERE id = ?
-            `).get(loserUserId)?.coins ?? 0;
+  const loserCoins = rows[0]?.coins ?? 0;
 
-            if (loserCoins >= wagerAmount) {
+  if (loserCoins >= wagerAmount) {
+    await client.query(
+      `UPDATE users SET coins = coins - $1 WHERE id = $2`,
+      [wagerAmount, loserUserId]
+    );
 
-              db.prepare(`
-                UPDATE users
-                SET coins = coins - ?
-                WHERE id = ?
-              `).run(wagerAmount, loserUserId);
-
-              db.prepare(`
-                UPDATE users
-                SET coins = coins + ?
-                WHERE id = ?
-              `).run(wagerAmount, winnerUserId);
-            }
-          });
-
-          tx();
+    await client.query(
+      `UPDATE users SET coins = coins + $1 WHERE id = $2`,
+      [wagerAmount, winnerUserId]
+    );
+  }
+});
         }
       }
 
@@ -2230,7 +2235,7 @@ console.log("Match stage:", room.stage);
     }
 
     // Clean up room after short delay
-    setTimeout(() => {
+    setTimeout(async () => {
       delete rooms[roomCode];
     }, 5000);
   }
