@@ -366,16 +366,15 @@ async function isSocketSessionStillValid(socket) {
   return rows.length > 0;
 }
 
-function refreshUserBadge(userId) {
-  const row = db.prepare(`
-    SELECT badge_equipped
-    FROM users
-    WHERE id = ?
-  `).get(userId);
+async function refreshUserBadge(userId) {
+  const { rows } = await pool.query(
+    `SELECT badge_equipped FROM users WHERE id = $1`,
+    [userId]
+  );
 
   const socket = activeSocketByUser.get(userId);
   if (socket) {
-    socket.badgeEquipped = row?.badge_equipped ?? null;
+    socket.badgeEquipped = rows[0]?.badge_equipped ?? null;
   }
 }
 
@@ -1423,17 +1422,17 @@ function getRole(room, socketId) {
   return null;
 }
 
-function emitState(roomCode) {
+async function emitState(roomCode) {
   const room = rooms[roomCode];
   if (!room) return;
 
   // 🔁 SAFELY refresh profiles AFTER room exists
   if (room.hostUserId) {
-    room.hostProfile = getProfileForUser(room.hostUserId);
+    room.hostProfile = await getProfileForUser(room.hostUserId);
   }
 
   if (room.guestUserId) {
-    room.guestProfile = getProfileForUser(room.guestUserId);
+    room.guestProfile = await getProfileForUser(room.guestUserId);
   }
 
   io.to(roomCode).emit("state-sync", {
@@ -1468,12 +1467,17 @@ function eligibleTeams() {
   return codes.filter((code) => Array.isArray(teams[code]) && teams[code].length >= 3);
 }
 
-function getProfileForUser(userId) {
-  const row = db.prepare(`
+async function getProfileForUser(userId) {
+  const { rows } = await pool.query(
+    `
     SELECT username_display, badge_equipped, coins, wins, losses
     FROM users
-    WHERE id = ?
-  `).get(userId);
+    WHERE id = $1
+    `,
+    [userId]
+  );
+
+  const row = rows[0];
 
   return {
     userId,
@@ -1724,7 +1728,7 @@ socket.on("clear-wager", ({ roomCode }) => {
 });
 
 
-socket.on("host-room", (roomCode) => {
+socket.on("host-room", async (roomCode) => {
   if (!roomCode) return;
 
   rooms[roomCode] = {
@@ -1734,7 +1738,7 @@ socket.on("host-room", (roomCode) => {
     hostUserId: socket.userId,
     guestUserId: null,
 
-    hostProfile: getProfileForUser(socket.userId),
+    hostProfile: await getProfileForUser(socket.userId),
     guestProfile: null,
 
     wager: {
@@ -1767,7 +1771,7 @@ settled: false,
 });
 
 
-  socket.on("join-room", (roomCode) => {
+  socket.on("join-room", async (roomCode) => {
     const room = rooms[roomCode];
     if (!room || room.guestId) {
       socket.emit("join-failed");
@@ -1785,7 +1789,7 @@ room.guestId = socket.id;
 room.guestUserId = socket.userId;
 room.stage = "lobby";
 
-room.guestProfile = getProfileForUser(socket.userId);
+room.guestProfile = await getProfileForUser(socket.userId);
 
 socket.data.roomCode = roomCode;
 socket.join(roomCode);
@@ -1794,7 +1798,7 @@ io.to(roomCode).emit("room-ready");
 emitState(roomCode);
 });
 
-socket.on("start-match", ({ roomCode }) => {
+socket.on("start-match", async ({ roomCode }) => {
   const room = rooms[roomCode];
   if (!room) return;
 
@@ -1803,8 +1807,8 @@ socket.on("start-match", ({ roomCode }) => {
   if (!wager) return;
 
   // 🚫 HARD coin validation (DB fresh)
-  const hostFresh = getProfileForUser(room.hostUserId);
-  const guestFresh = getProfileForUser(room.guestUserId);
+  const hostFresh = await getProfileForUser(room.hostUserId);
+  const guestFresh = await getProfileForUser(room.guestUserId);
 
   room.hostProfile = hostFresh;
   room.guestProfile = guestFresh;
@@ -2027,8 +2031,8 @@ if (gameOver) {
 
   room.stage = "gameover";
 
-  room.hostProfile = getProfileForUser(room.hostUserId);
-  room.guestProfile = getProfileForUser(room.guestUserId);
+  room.hostProfile = await getProfileForUser(room.hostUserId);
+  room.guestProfile = await getProfileForUser(room.guestUserId);
 
   io.to(roomCode).emit("round-ended", {
     scores: room.scores,
@@ -2125,8 +2129,8 @@ socket.on("leave-room", async () => {
     room.scores[winnerRole] = WIN_SCORE;
     room.stage = "gameover";
 
-    room.hostProfile = getProfileForUser(room.hostUserId);
-    room.guestProfile = getProfileForUser(room.guestUserId);
+    room.hostProfile = await getProfileForUser(room.hostUserId);
+    room.guestProfile = await getProfileForUser(room.guestUserId);
 
     io.to(roomCode).emit("round-ended", {
       scores: room.scores,
@@ -2222,8 +2226,8 @@ await transaction(async (client) => {
       room.scores[winnerRole] = WIN_SCORE;
       room.stage = "gameover";
 
-      room.hostProfile = getProfileForUser(room.hostUserId);
-      room.guestProfile = getProfileForUser(room.guestUserId);
+      room.hostProfile = await getProfileForUser(room.hostUserId);
+      room.guestProfile = await getProfileForUser(room.guestUserId);
 
       io.to(roomCode).emit("round-ended", {
         scores: room.scores,
