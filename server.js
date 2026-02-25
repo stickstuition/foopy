@@ -1264,115 +1264,111 @@ app.post("/stats/commit-game", async (req, res) => {
   }
 });
 
-app.post("/badges/equip", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return res.status(401).json({ error: "Not logged in" });
+app.post("/badges/equip", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
 
-  const { badgeId } = req.body;
-  if (!badgeId) return res.status(400).json({ error: "Missing badgeId" });
+    const { badgeId } = req.body;
+    if (!badgeId) return res.status(400).json({ error: "Missing badgeId" });
 
-  const row = db.prepare(`
-    SELECT badges_owned
-    FROM users
-    WHERE id = ?
-  `).get(userId);
-
-  const owned = parseBadgesOwned(row?.badges_owned);
-
-  if (!owned.includes(badgeId)) {
-    return res.status(400).json({ error: "Badge not owned" });
-  }
-
-  db.prepare(`
-    UPDATE users
-    SET badge_equipped = ?
-    WHERE id = ?
-  `).run(badgeId, userId);
-
-  refreshUserBadge(userId);
-
-  res.json({ ok: true, badgeEquipped: badgeId });
-});
-
-app.post("/badges/buy", (req, res) => {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) {
-    return res.status(401).json({ error: "Not logged in" });
-  }
-
-  const { badgeId } = req.body;
-  const badge = BADGES[badgeId];
-
-  if (!badge) {
-    return res.status(400).json({ error: "Invalid badge" });
-  }
-
-  const row = db.prepare(`
-    SELECT coins, badges_owned
-    FROM users
-    WHERE id = ?
-  `).get(userId);
-
-  const coins = row?.coins ?? 0;
-  const owned = parseBadgesOwned(row?.badges_owned);
-
-  // Already owned → no-op success
-  if (owned.includes(badgeId)) {
-    return res.json({ ok: true });
-  }
-
-  // ---------- SECRET BADGE: Tasmania Devils ----------
-  if (badge.unlock.method === "all_teams") {
-    const teamBadgeIds = Object.values(BADGES)
-      .filter(b => b.type === "team")
-      .map(b => b.id);
-
-    const ownsAllTeams = teamBadgeIds.every(id =>
-      owned.includes(id)
+    const { rows } = await pool.query(
+      `SELECT badges_owned FROM users WHERE id = $1`,
+      [userId]
     );
 
-    if (!ownsAllTeams) {
-      return res.status(403).json({ error: "Secret badge locked" });
+    const owned = parseBadgesOwned(rows[0]?.badges_owned);
+
+    if (!owned.includes(badgeId)) {
+      return res.status(400).json({ error: "Badge not owned" });
     }
 
-    // Tasmania still costs coins? If not, set cost = 0 in badges.js
+    await pool.query(
+      `UPDATE users SET badge_equipped = $1 WHERE id = $2`,
+      [badgeId, userId]
+    );
+
+    await refreshUserBadge(userId);
+
+    res.json({ ok: true, badgeEquipped: badgeId });
+  } catch (err) {
+    console.error("BADGE EQUIP ERROR:", err);
+    res.status(500).json({ error: "Server error" });
   }
+});
 
-  // ---------- COIN VALIDATION ----------
-  if (
-    badge.unlock.method !== "coins" &&
-    badge.unlock.method !== "all_teams"
-  ) {
-    return res.status(400).json({ error: "Invalid badge" });
+app.post("/badges/buy", async (req, res) => {
+  try {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Not logged in" });
+
+    const { badgeId } = req.body;
+    const badge = BADGES[badgeId];
+
+    if (!badge) {
+      return res.status(400).json({ error: "Invalid badge" });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT coins, badges_owned FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    const coins = rows[0]?.coins ?? 0;
+    const owned = parseBadgesOwned(rows[0]?.badges_owned);
+
+    if (owned.includes(badgeId)) {
+      return res.json({ ok: true });
+    }
+
+    // Secret badge logic
+    if (badge.unlock.method === "all_teams") {
+      const teamBadgeIds = Object.values(BADGES)
+        .filter(b => b.type === "team")
+        .map(b => b.id);
+
+      const ownsAllTeams = teamBadgeIds.every(id => owned.includes(id));
+      if (!ownsAllTeams) {
+        return res.status(403).json({ error: "Secret badge locked" });
+      }
+    }
+
+    if (
+      badge.unlock.method !== "coins" &&
+      badge.unlock.method !== "all_teams"
+    ) {
+      return res.status(400).json({ error: "Invalid badge" });
+    }
+
+    const cost = badge.unlock.cost ?? 0;
+
+    if (coins < cost) {
+      return res.status(400).json({ error: "Not enough coins" });
+    }
+
+    const nextOwned = [...owned, badgeId];
+
+    await pool.query(
+      `
+      UPDATE users
+      SET
+        coins = coins - $1,
+        coins_spent = COALESCE(coins_spent, 0) + $1,
+        badges_owned = $2
+      WHERE id = $3
+      `,
+      [cost, JSON.stringify(nextOwned), userId]
+    );
+
+    res.json({
+      ok: true,
+      coins: coins - cost,
+      badgesOwned: nextOwned
+    });
+  } catch (err) {
+    console.error("BADGE BUY ERROR:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  const cost = badge.unlock.cost ?? 0;
-
-  if (coins < cost) {
-    return res.status(400).json({ error: "Not enough coins" });
-  }
-
-  const nextOwned = [...owned, badgeId];
-
-  db.prepare(`
-    UPDATE users
-    SET
-      coins = coins - ?,
-      coins_spent = coins_spent + ?,
-      badges_owned = ?
-    WHERE id = ?
-  `).run(
-    cost,
-    cost,
-    JSON.stringify(nextOwned),
-    userId
-  );
-
-  res.json({
-    ok: true,
-    coins: coins - cost,
-    badgesOwned: nextOwned
-  });
 });
 
 
