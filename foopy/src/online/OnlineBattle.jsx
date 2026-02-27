@@ -313,9 +313,12 @@ const onCoinResult = ({ guestChoice, coinResult, selector }) => {
 };
 
 const onStateSync = (state) => {
-  if (typeof state.stage === "string") {
+if (typeof state.stage === "string") {
   setStage((prev) => {
-    // ✅ During client-controlled animations and selection, ignore server stage pushes
+    // ✅ ALWAYS allow server to force gameover (critical fix)
+    if (state.stage === "gameover") return "gameover";
+
+    // During animations / team select, ignore other stage pushes
     if (prev === "coin") return prev;
     if (prev === "team") return prev;
     if (prev === "ballup") return prev;
@@ -384,20 +387,24 @@ const strip = (p) =>
 };
 
 
-    const onRoundEnded = ({ scores, selector, stage }) => {
-      console.log("🏁 Round ended:", { scores, selector, stage });
+const onRoundEnded = ({ scores, selector, stage }) => {
+  console.log("🏁 Round ended:", { scores, selector, stage });
 
-      if (scores) setScores(scores);
-      if (selector) setSelector(selector);
-      if (stage) setStage(stage);
+  if (scores) setScores(scores);
+  if (selector) setSelector(selector);
+  if (stage) setStage(stage);
 
-      setTeamsPicked({ host: null, guest: null });
-      setCurrentTeam(null);
-      setGuestChoice(null);
-      setCoinResult(null);
+  // 🔥 CRITICAL: clear question UI
+  setActiveQuestion(null);
+  setRoundDuration(null);
 
-      if (stage === "team") setTeamOptions(null);
-    };
+  setTeamsPicked({ host: null, guest: null });
+  setCurrentTeam(null);
+  setGuestChoice(null);
+  setCoinResult(null);
+
+  if (stage === "team") setTeamOptions(null);
+};
 
     // NEW: server broadcasts the 3 team options
     const onTeamOptions = ({ options }) => {
