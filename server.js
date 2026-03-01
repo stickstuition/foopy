@@ -1931,103 +1931,104 @@ if (gameOver) {
   const now = Date.now();
   const weekKey = getWeekKey(now);
 
+try {
   await transaction(async (client) => {
-  const now = Date.now();
-  const weekKey = getWeekKey(now);
+    const now = Date.now();
+    const weekKey = getWeekKey(now);
 
-  const hostWon = winnerRole === "host";
-  const guestWon = winnerRole === "guest";
+    const hostWon = winnerRole === "host" ? 1 : 0;
+const guestWon = winnerRole === "guest" ? 1 : 0;
 
-  // Insert host game
-  await client.query(
-    `
-    INSERT INTO games (
-      user_id,
-      mode,
-      score,
-      correct,
-      attempted,
-      accuracy,
-      longest_streak,
-      duration,
-      coins_earned,
-      created_at,
-      week_key,
-      did_win,
-      opponent_name,
-      opponent_score
-    )
-    VALUES ($1,'online',$2,0,0,NULL,0,0,0,$3,$4,$5,$6,$7)
-    `,
-    [
-      hostUserId,
-      hostScore,
-      now,
-      weekKey,
-      hostWon,
-      room.guestProfile.username,
-      guestScore
-    ]
-  );
+    await client.query(
+      `
+      INSERT INTO games (
+        user_id,
+        mode,
+        score,
+        correct,
+        attempted,
+        accuracy,
+        longest_streak,
+        duration,
+        coins_earned,
+        created_at,
+        week_key,
+        did_win,
+        opponent_name,
+        opponent_score
+      )
+      VALUES ($1,'online',$2,0,0,NULL,0,0,0,$3,$4,$5,$6,$7)
+      `,
+      [
+        hostUserId,
+        hostScore,
+        now,
+        weekKey,
+        hostWon,
+        room.guestProfile.username,
+        guestScore
+      ]
+    );
 
-  // Insert guest game
-  await client.query(
-    `
-    INSERT INTO games (
-      user_id,
-      mode,
-      score,
-      correct,
-      attempted,
-      accuracy,
-      longest_streak,
-      duration,
-      coins_earned,
-      created_at,
-      week_key,
-      did_win,
-      opponent_name,
-      opponent_score
-    )
-    VALUES ($1,'online',$2,0,0,NULL,0,0,0,$3,$4,$5,$6,$7)
-    `,
-    [
-      guestUserId,
-      guestScore,
-      now,
-      weekKey,
-      guestWon,
-      room.hostProfile.username,
-      hostScore
-    ]
-  );
+    await client.query(
+      `
+      INSERT INTO games (
+        user_id,
+        mode,
+        score,
+        correct,
+        attempted,
+        accuracy,
+        longest_streak,
+        duration,
+        coins_earned,
+        created_at,
+        week_key,
+        did_win,
+        opponent_name,
+        opponent_score
+      )
+      VALUES ($1,'online',$2,0,0,NULL,0,0,0,$3,$4,$5,$6,$7)
+      `,
+      [
+        guestUserId,
+        guestScore,
+        now,
+        weekKey,
+        guestWon,
+        room.hostProfile.username,
+        hostScore
+      ]
+    );
 
-  // Update host stats
-  await client.query(
-    `
-    UPDATE users
-    SET
-      games_played = games_played + 1,
-      wins = COALESCE(wins,0) + $1,
-      losses = COALESCE(losses,0) + $2
-    WHERE id = $3
-    `,
-    [hostWon ? 1 : 0, hostWon ? 0 : 1, hostUserId]
-  );
+    await client.query(
+      `
+      UPDATE users
+      SET
+        games_played = games_played + 1,
+        wins = COALESCE(wins,0) + $1,
+        losses = COALESCE(losses,0) + $2
+      WHERE id = $3
+      `,
+      [hostWon, hostWon ? 0 : 1, hostUserId]
+    );
 
-  // Update guest stats
-  await client.query(
-    `
-    UPDATE users
-    SET
-      games_played = games_played + 1,
-      wins = COALESCE(wins,0) + $1,
-      losses = COALESCE(losses,0) + $2
-    WHERE id = $3
-    `,
-    [guestWon ? 1 : 0, guestWon ? 0 : 1, guestUserId]
-  );
-});
+    await client.query(
+      `
+      UPDATE users
+      SET
+        games_played = games_played + 1,
+        wins = COALESCE(wins,0) + $1,
+        losses = COALESCE(losses,0) + $2
+      WHERE id = $3
+      `,
+      [guestWon, guestWon ? 0 : 1, guestUserId]
+    );
+  });
+} catch (err) {
+  console.error("[online gameover] failed to commit results:", err);
+  // IMPORTANT: do not block UI progression to gameover
+}
 
   room.stage = "gameover";
 
@@ -2200,26 +2201,31 @@ console.log("Match stage:", room.stage);
           const loserUserId =
             leaverRole === "host" ? room.hostUserId : room.guestUserId;
 
-await transaction(async (client) => {
-  const { rows } = await client.query(
-    `SELECT coins FROM users WHERE id = $1`,
-    [loserUserId]
-  );
-
-  const loserCoins = rows[0]?.coins ?? 0;
-
-  if (loserCoins >= wagerAmount) {
-    await client.query(
-      `UPDATE users SET coins = coins - $1 WHERE id = $2`,
-      [wagerAmount, loserUserId]
+try {
+  await transaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT coins FROM users WHERE id = $1`,
+      [loserUserId]
     );
 
-    await client.query(
-      `UPDATE users SET coins = coins + $1 WHERE id = $2`,
-      [wagerAmount, winnerUserId]
-    );
-  }
-});
+    const loserCoins = rows[0]?.coins ?? 0;
+
+    if (loserCoins >= wagerAmount) {
+      await client.query(
+        `UPDATE users SET coins = coins - $1 WHERE id = $2`,
+        [wagerAmount, loserUserId]
+      );
+
+      await client.query(
+        `UPDATE users SET coins = coins + $1 WHERE id = $2`,
+        [wagerAmount, winnerUserId]
+      );
+    }
+  });
+} catch (err) {
+  console.error("[online forfeit] failed to settle wager:", err);
+  // IMPORTANT: do not block UI progression to gameover
+}
         }
       }
 
