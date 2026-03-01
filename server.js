@@ -1489,7 +1489,64 @@ async function getProfileForUser(userId) {
   };
 }
 
+async function settleWagerIfNeeded(room, winnerRole) {
+  if (!room) return;
+  if (room.settled) return;
 
+  const wagerAmount = Number(room.wager?.agreed ?? 0);
+  if (!Number.isFinite(wagerAmount) || wagerAmount <= 0) {
+    room.settled = true;
+    return;
+  }
+
+  const winnerUserId =
+    winnerRole === "host" ? room.hostUserId : room.guestUserId;
+
+  const loserUserId =
+    winnerRole === "host" ? room.guestUserId : room.hostUserId;
+
+  if (!winnerUserId || !loserUserId) {
+    room.settled = true;
+    return;
+  }
+
+  room.settled = true;
+
+  try {
+    await transaction(async (client) => {
+      // Lock loser to prevent negative/race
+      const { rows } = await client.query(
+        `SELECT coins FROM users WHERE id = $1 FOR UPDATE`,
+        [loserUserId]
+      );
+
+      const loserCoins = Number(rows[0]?.coins ?? 0);
+
+      if (loserCoins >= wagerAmount) {
+        await client.query(
+          `UPDATE users SET coins = coins - $1 WHERE id = $2`,
+          [wagerAmount, loserUserId]
+        );
+
+        await client.query(
+          `UPDATE users SET coins = coins + $1 WHERE id = $2`,
+          [wagerAmount, winnerUserId]
+        );
+      } else {
+        // If loser can't pay (shouldn't happen because start-match validates),
+        // do nothing but still keep room.settled true to avoid loops.
+        console.warn("[settleWagerIfNeeded] loser cannot pay", {
+          loserUserId,
+          loserCoins,
+          wagerAmount
+        });
+      }
+    });
+  } catch (err) {
+    console.error("[settleWagerIfNeeded] failed:", err);
+    // keep settled=true to avoid repeated attempts in a broken state
+  }
+}
 
 
 
@@ -2030,6 +2087,9 @@ const guestWon = winnerRole === "guest" ? 1 : 0;
   // IMPORTANT: do not block UI progression to gameover
 }
 
+// ✅ Settle wager on normal win (previously only forfeits settled)
+await settleWagerIfNeeded(room, winnerRole);
+
   room.stage = "gameover";
 
   room.hostProfile = await getProfileForUser(room.hostUserId);
@@ -2101,31 +2161,7 @@ socket.on("leave-room", async () => {
     room.stage !== "gameover"
   ) {
 
-    if (!room.settled) {
-      room.settled = true;
-
-      const wagerAmount = room.wager.agreed;
-
-      if (wagerAmount > 0) {
-        const winnerUserId =
-          winnerRole === "host" ? room.hostUserId : room.guestUserId;
-
-        const loserUserId =
-          role === "host" ? room.hostUserId : room.guestUserId;
-
-        await transaction(async (client) => {
-  await client.query(
-    `UPDATE users SET coins = coins - $1 WHERE id = $2`,
-    [wagerAmount, loserUserId]
-  );
-
-  await client.query(
-    `UPDATE users SET coins = coins + $1 WHERE id = $2`,
-    [wagerAmount, winnerUserId]
-  );
-});
-      }
-    }
+await settleWagerIfNeeded(room, winnerRole);
 
     room.scores[winnerRole] = WIN_SCORE;
     room.stage = "gameover";
@@ -2188,46 +2224,7 @@ console.log("Match stage:", room.stage);
       room.stage !== "join"
     ) {
 
-      if (!room.settled) {
-        room.settled = true;
-
-        const wagerAmount = room.wager?.agreed ?? 0;
-
-        if (wagerAmount > 0) {
-
-          const winnerUserId =
-            winnerRole === "host" ? room.hostUserId : room.guestUserId;
-
-          const loserUserId =
-            leaverRole === "host" ? room.hostUserId : room.guestUserId;
-
-try {
-  await transaction(async (client) => {
-    const { rows } = await client.query(
-      `SELECT coins FROM users WHERE id = $1`,
-      [loserUserId]
-    );
-
-    const loserCoins = rows[0]?.coins ?? 0;
-
-    if (loserCoins >= wagerAmount) {
-      await client.query(
-        `UPDATE users SET coins = coins - $1 WHERE id = $2`,
-        [wagerAmount, loserUserId]
-      );
-
-      await client.query(
-        `UPDATE users SET coins = coins + $1 WHERE id = $2`,
-        [wagerAmount, winnerUserId]
-      );
-    }
-  });
-} catch (err) {
-  console.error("[online forfeit] failed to settle wager:", err);
-  // IMPORTANT: do not block UI progression to gameover
-}
-        }
-      }
+      await settleWagerIfNeeded(room, winnerRole);
 
       room.scores[winnerRole] = WIN_SCORE;
       room.stage = "gameover";
