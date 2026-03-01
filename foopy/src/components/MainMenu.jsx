@@ -256,8 +256,8 @@ const redStyle = {
 const hud = (mobile, profileOpen) => ({
   position: "absolute",
   top: mobile ? 12 : 20,
-  right: mobile ? "auto" : 24,
-  left: mobile ? 12 : "auto",
+  right: mobile ? 12 : 24,
+  left: mobile ? "auto" : "auto",
   display: "flex",
   gap: 12,
   zIndex: 10,
