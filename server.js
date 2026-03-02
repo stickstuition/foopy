@@ -58,13 +58,53 @@ function normalizeForProfanity(text) {
 function isProfane(text) {
   if (!text) return false;
 
-  const normalized = text.toLowerCase();
+  const rawLower = String(text).toLowerCase();
+  const collapsed = normalizeForProfanity(rawLower);
 
-  // dictionary check
-  if (profanity.check(normalized)) return true;
+  // dictionary check on raw + collapsed
+  if (profanity.check(rawLower)) return true;
+  if (collapsed && profanity.check(collapsed)) return true;
 
-  // stem check (cunt -> cunty, fuck -> fucker, etc)
-  return PROFANE_STEMS.some(stem => normalized.includes(stem));
+  // stem check on raw + collapsed
+  if (PROFANE_STEMS.some((stem) => rawLower.includes(stem))) return true;
+  if (collapsed && PROFANE_STEMS.some((stem) => collapsed.includes(stem))) return true;
+
+  return false;
+}
+
+function censorTextKeepLength(text) {
+  const original = String(text ?? "");
+  if (!original) return original;
+
+  // 1) Token-based censor: replace profane alphanumeric "words" with same-length ****
+  const out = original.replace(/[A-Za-z0-9]+/g, (token) => {
+    const tokenLower = token.toLowerCase();
+    const tokenCollapsed = normalizeForProfanity(tokenLower);
+
+    const profane =
+      profanity.check(tokenLower) ||
+      (tokenCollapsed && profanity.check(tokenCollapsed)) ||
+      PROFANE_STEMS.some((stem) => tokenLower.includes(stem)) ||
+      (tokenCollapsed && PROFANE_STEMS.some((stem) => tokenCollapsed.includes(stem)));
+
+    return profane ? "*".repeat(token.length) : token;
+  });
+
+  // 2) If someone spaces/punctuates around letters (e.g. "f u c k" or "f.u.c.k"),
+  // the token pass may miss it. If the whole message looks profane when collapsed,
+  // mask ALL alphanumerics (keeps spaces/punctuation visible).
+  const collapsedAll = normalizeForProfanity(original);
+  const looksProfaneOverall =
+    (collapsedAll && profanity.check(collapsedAll)) ||
+    (collapsedAll && PROFANE_STEMS.some((stem) => collapsedAll.includes(stem)));
+
+  if (!looksProfaneOverall) return out;
+
+  // If token pass already censored something, keep that result.
+  if (out !== original) return out;
+
+  // Otherwise, mask all letters/digits to prevent bypass via separators.
+  return original.replace(/[A-Za-z0-9]/g, "*");
 }
 
 
@@ -2009,7 +2049,8 @@ socket.on("start-match", async ({ roomCode }) => {
 
     const correct = validateAnswer(trimmed, room.currentQuestion.answerName);
  
-    io.to(roomCode).emit("guess-feed", { player: role, guess: trimmed, correct });
+    const feedGuess = censorTextKeepLength(trimmed);
+io.to(roomCode).emit("guess-feed", { player: role, guess: feedGuess, correct });
     if (!correct) return;
 
     room.roundResolved = true;

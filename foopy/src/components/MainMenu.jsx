@@ -292,8 +292,8 @@ const hudButton = (mobile) => ({
 });
 
 const profileButton = (mobile) => ({
-  width: mobile ? 42 : 72,
-  height: mobile ? 42 : 72,
+  width: mobile ? 42 : 90,
+  height: mobile ? 42 : 90,
   borderRadius: "50%",
   background: "linear-gradient(to bottom, #666, #2f2f2f)",
   display: "flex",
