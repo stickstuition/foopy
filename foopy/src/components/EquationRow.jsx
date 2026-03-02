@@ -75,10 +75,20 @@ export default function EquationRow({
     };
   }, []);
 
-  const cardSize = isMobile ? "small" : "large";
-  const opSize = isMobile ? 28 : 44;
-  const gap = isMobile ? 10 : 16;
+    const cardSize = isMobile ? "small" : "large";
 
+  // Slightly tighter on desktop so the bottom (names/numbers) has room
+  const opSize = isMobile ? 28 : 38;
+  const gap = isMobile ? 10 : 12;
+
+  // Height of the "card row" (cards + operators + equals + badge)
+  // Used to align "=" with the players row (not the names/numbers).
+  const cardRowHeight = isMobile ? 120 : 160;
+  useEffect(() => {
+    console.log("EquationRow showNumbers:", showNumbers);
+    console.log("EquationRow sample player:", safePlayers?.[0]);
+    console.log("EquationRow sample jersey:", getJerseyNumber(safePlayers?.[0]));
+  }, [showNumbers, safePlayers]);
   return (
     <div
       ref={outerRef}
@@ -87,8 +97,8 @@ export default function EquationRow({
         overflow: "hidden",
         display: "flex",
         justifyContent: "center",
-        paddingTop: isMobile ? 14 : 60,
-        marginBottom: 20
+                paddingTop: isMobile ? 14 : 34,
+        marginBottom: isMobile ? 16 : 12
       }}
     >
       <div
@@ -111,7 +121,14 @@ export default function EquationRow({
               gap: isMobile ? 6 : 10
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 14 }}>
+                        <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: isMobile ? 10 : 14,
+                height: cardRowHeight
+              }}
+            >
               <PlayerCard image={p.image} size={cardSize} />
 
               {index < safePlayers.length - 1 && (
@@ -123,14 +140,16 @@ export default function EquationRow({
 
             {showNames && <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>{p.name}</div>}
                         {showNumbers && getJerseyNumber(p) != null && (
-              <div style={{ fontSize: 12, opacity: 0.7 }}>#{getJerseyNumber(p)}</div>
-            )}
+  <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.85 }}>
+    #{getJerseyNumber(p)}
+  </div>
+)}
           </div>
         ))}
 
-        <div
+                <div
           style={{
-            height: isMobile ? 120 : 160,
+            height: cardRowHeight,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -140,7 +159,7 @@ export default function EquationRow({
           <span style={{ fontSize: opSize, fontWeight: 900 }}>=</span>
         </div>
 
-        <div
+                <div
           style={{
             display: "flex",
             flexDirection: "column",
@@ -148,13 +167,22 @@ export default function EquationRow({
             gap: isMobile ? 6 : 10
           }}
         >
-          {!answerPlayer && <UnknownPlayerCard teamKey={teamKey} />}
+                    <div
+            style={{
+              height: cardRowHeight,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            {!answerPlayer && <UnknownPlayerCard teamKey={teamKey} />}
 
-          {answerPlayer && (
-            <div style={{ animation: "answerFade 0.6s ease forwards" }}>
-              <PlayerCard image={answerPlayer.image} size={cardSize} />
-            </div>
-          )}
+            {answerPlayer && (
+              <div style={{ animation: "answerFade 0.6s ease forwards" }}>
+                <PlayerCard image={answerPlayer.image} size={cardSize} />
+              </div>
+            )}
+          </div>
 
           {showNames && (
             <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>
@@ -163,10 +191,10 @@ export default function EquationRow({
           )}
 
                     {showNumbers && answerPlayer && getJerseyNumber(answerPlayer) != null && (
-            <div style={{ fontSize: 12, opacity: 0.7 }}>
-              #{getJerseyNumber(answerPlayer)}
-            </div>
-          )}
+  <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.85 }}>
+    #{getJerseyNumber(answerPlayer)}
+  </div>
+)}
         </div>
       </div>
     </div>
