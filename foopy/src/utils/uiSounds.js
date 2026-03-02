@@ -19,6 +19,7 @@ export function isSoundEnabled() {
 }
 
 export function playDownClick() {
+    console.log("playDownClick called");
   if (!soundEnabled) return;
 
   downClick.currentTime = 0;
@@ -27,6 +28,7 @@ export function playDownClick() {
 }
 
 export function playUpClick() {
+    console.log("playUpClick called");
   if (!soundEnabled) return;
 
   upClick.currentTime = 0;
