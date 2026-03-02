@@ -96,20 +96,23 @@ export default function EquationRow({
         marginBottom: isMobile ? 16 : 12
       }}
     >
-      <div
-  ref={innerRef}
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap,
-
-    // Center the SCALED element (transform doesn't affect layout width)
-    position: "relative",
-    left: "50%",
-    transform: `translateX(-50%) scale(${scale})`,
-    transformOrigin: "top center"
-  }}
->
+            <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "center"
+        }}
+      >
+        <div
+          ref={innerRef}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap,
+            transform: `scale(${scale})`,
+            transformOrigin: "top center"
+          }}
+        >
         {safePlayers.map((p, index) => (
           <div
             key={`${p.name}-${index}`}
@@ -237,7 +240,8 @@ export default function EquationRow({
     #{getJerseyNumber(answerPlayer)}
   </div>
 )}
-        </div>
+                </div>
+      </div>
       </div>
     </div>
   );
