@@ -13,7 +13,23 @@ export default function EquationRow({
 }) {
   const isMobile = useIsMobile();
   const safePlayers = useMemo(() => (Array.isArray(players) ? players : []), [players]);
+  const getJerseyNumber = (player) => {
+    if (!player) return null;
 
+    // Support multiple possible keys across different datasets
+    const n =
+      player.number ??
+      player.jumperNumber ??
+      player.guernseyNumber ??
+      player.jumper ??
+      player.no;
+
+    // Normalize empty/invalid values
+    if (n === null || n === undefined) return null;
+    if (typeof n === "string" && n.trim() === "") return null;
+
+    return n;
+  };
   const outerRef = useRef(null);
   const innerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -106,7 +122,9 @@ export default function EquationRow({
             </div>
 
             {showNames && <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>{p.name}</div>}
-            {showNumbers && <div style={{ fontSize: 12, opacity: 0.7 }}>#{p.number}</div>}
+                        {showNumbers && getJerseyNumber(p) != null && (
+              <div style={{ fontSize: 12, opacity: 0.7 }}>#{getJerseyNumber(p)}</div>
+            )}
           </div>
         ))}
 
@@ -144,9 +162,9 @@ export default function EquationRow({
             </div>
           )}
 
-          {showNumbers && (
+                    {showNumbers && answerPlayer && getJerseyNumber(answerPlayer) != null && (
             <div style={{ fontSize: 12, opacity: 0.7 }}>
-              {answerPlayer ? `#${answerPlayer.number}` : ""}
+              #{getJerseyNumber(answerPlayer)}
             </div>
           )}
         </div>
