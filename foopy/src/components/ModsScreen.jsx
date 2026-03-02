@@ -187,7 +187,10 @@ return (
   <div
     style={{
       ...styles.page,
-      paddingBottom: isMobile ? 24 : 20
+      paddingBottom: isMobile ? 24 : 20,
+      ...(isMobile
+        ? { overflowY: "auto", WebkitOverflowScrolling: "touch" }
+        : { overflowY: "hidden" })
     }}
   >
 <div style={{ height: isMobile ? 64 : 0 }} />
@@ -407,11 +410,9 @@ function ToggleColumn({ title, value, onToggle }) {
 const styles = {
 page: {
   width: "100%",
-  height: "100vh",
+  height: "100%",          // ✅ fill GamePanel, not the whole window
   padding: 20,
-  boxSizing: "border-box",
-  overflowY: "auto",
-  WebkitOverflowScrolling: "touch"
+  boxSizing: "border-box"
 },
 
   title: {

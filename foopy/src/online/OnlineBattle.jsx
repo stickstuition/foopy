@@ -8,6 +8,7 @@ import BallUpAnimation from "../components/BallUpAnimation";
 import CoinTossAnimation from "../components/CoinTossAnimation";
 import { useAuth } from "../auth/AuthContext";
 import { API_URL } from "../config/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 
 
@@ -22,9 +23,23 @@ const TEAM_PICK_SECONDS = 10;
 
 /* ---------- STYLES ---------- */
 
-const wrap = {
+const wrapDesktop = {
   width: "100%",
-  minHeight: "100svh",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "flex-start",
+  textAlign: "center",
+  paddingTop: 72,
+  paddingBottom: 24,
+  boxSizing: "border-box",
+  overflow: "hidden"
+};
+
+const wrapMobile = {
+  width: "100%",
+  height: "100%",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -32,7 +47,9 @@ const wrap = {
   textAlign: "center",
   paddingTop: 72,
   paddingBottom: 96,
-  boxSizing: "border-box"
+  boxSizing: "border-box",
+  overflowY: "auto",
+  WebkitOverflowScrolling: "touch"
 };
 
 
@@ -170,7 +187,8 @@ const [roundDuration, setRoundDuration] = useState(null);
   const me = useMemo(() => (startMode === "host" ? "host" : "guest"), [startMode]);
   const { updateCoins } = useAuth();
   const isHost = me === "host";
-
+  const isMobile = useIsMobile();
+  const wrapStyle = isMobile ? wrapMobile : wrapDesktop;
   /* ---------- HELPERS ---------- */
 
   const generateRoomCode = useCallback(() => {
@@ -633,7 +651,7 @@ useEffect(() => {
 
 if (renderStage === "join") {
   return (
-    <div style={wrap}>
+    <div style={wrapStyle}>
       {error && (
         <FoopyError
           title={error.title}
@@ -678,7 +696,7 @@ if (renderStage === "lobby") {
     wager?.agreed;
 
   return (
-    <div style={wrap}>
+    <div style={wrapStyle}>
       {/* 🔔 Foopy error modal */}
       {error && (
         <FoopyError
@@ -838,7 +856,7 @@ if (renderStage === "team") {
         : "Opponent is choosing...";
 
 return (
-  <div style={wrap}>
+  <div style={wrapStyle}>
     <TeamSelect
       selector={selector}
       me={me}
@@ -867,7 +885,7 @@ return (
 if (renderStage === "question") {
   if (!activeQuestion) {
     return (
-      <div style={wrap}>
+      <div style={wrapStyle}>
         <p>Waiting for question...</p>
       </div>
     );
@@ -909,7 +927,7 @@ if (renderStage === "gameover") {
   const loserBadge = loserBadgeId ? BADGES?.[loserBadgeId] : null;
 
   return (
-    <div style={wrap}>
+    <div style={wrapStyle}>
       <div style={gameOverWrap}>
         <div style={gameOverTitle}>{winnerName} wins!</div>
 
