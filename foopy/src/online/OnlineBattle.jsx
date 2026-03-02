@@ -195,6 +195,10 @@ const [roundDuration, setRoundDuration] = useState(null);
   const { updateCoins } = useAuth();
   const isHost = me === "host";
   const isMobile = useIsMobile();
+    const renderStage =
+    stage === "host"
+      ? "lobby"
+      : stage;
   const wrapStyle = isMobile
   ? wrapMobile
   : renderStage === "join"
@@ -247,10 +251,6 @@ const [roundDuration, setRoundDuration] = useState(null);
     return me === "host" ? teamsPicked.host : teamsPicked.guest;
   }, [teamsPicked, me]);
 
-  const renderStage =
-  stage === "host"
-    ? "lobby"
-    : stage;
   /* ---------- SOCKET INIT + LISTENERS ---------- */
 
 
