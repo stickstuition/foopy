@@ -44,6 +44,14 @@ const wrapDesktopCenter = {
   paddingBottom: 0
 };
 
+const wrapDesktopQuestion = {
+  ...wrapDesktop,
+  // Allow dropdowns/overlays (autocomplete, etc.) to render without being cut off
+  overflow: "visible",
+  // Give a little extra breathing room near the bottom
+  paddingBottom: 40
+};
+
 const wrapMobile = {
   width: "100%",
   height: "100%",
@@ -199,11 +207,13 @@ const [roundDuration, setRoundDuration] = useState(null);
     stage === "host"
       ? "lobby"
       : stage;
-  const wrapStyle = isMobile
-  ? wrapMobile
-  : renderStage === "join"
-  ? wrapDesktopCenter
-  : wrapDesktop;
+    const wrapStyle = isMobile
+    ? wrapMobile
+    : renderStage === "join"
+    ? wrapDesktopCenter
+    : renderStage === "question"
+    ? wrapDesktopQuestion
+    : wrapDesktop;
   /* ---------- HELPERS ---------- */
 
   const generateRoomCode = useCallback(() => {

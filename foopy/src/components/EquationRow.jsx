@@ -197,7 +197,7 @@ export default function EquationRow({
                   justifyContent: "center"
                 }}
               >
-                <UnknownPlayerCard teamKey={teamKey} />
+                                <UnknownPlayerCard teamKey={teamKey} size={cardSize} />
               </div>
             )}
 
