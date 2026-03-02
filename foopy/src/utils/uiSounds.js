@@ -20,12 +20,16 @@ export function isSoundEnabled() {
 
 export function playDownClick() {
   if (!soundEnabled) return;
+
   downClick.currentTime = 0;
-  downClick.play();
+  const p = downClick.play();
+  if (p && typeof p.catch === "function") p.catch(() => {});
 }
 
 export function playUpClick() {
   if (!soundEnabled) return;
+
   upClick.currentTime = 0;
-  upClick.play();
+  const p = upClick.play();
+  if (p && typeof p.catch === "function") p.catch(() => {});
 }

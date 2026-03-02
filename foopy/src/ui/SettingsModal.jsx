@@ -77,8 +77,13 @@ export default function SettingsModal({ user, onClose, onLogout }) {
       It was designed by a former mathematics teacher who saw first-hand
       how strongly students respond when learning connects to their
       interests. The goal is not to replace classroom learning, but to
-      support it by making maths feel familiar. This game is dedicated to those students who made games like this so fun.
+      support it by making maths feel familiar.
     </p>
+
+    <p>
+      Foopy is dedicated to those students who made games like this so fun.
+    </p>
+
 
     <p>
       <strong>Version:</strong> v0.1.0<br />
