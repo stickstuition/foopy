@@ -25,16 +25,19 @@ const TEAM_PICK_SECONDS = 10;
 
 const wrapDesktop = {
   width: "100%",
-  height: "100%",
+  height: "100vh",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "flex-start",
   textAlign: "center",
-  paddingTop: 56,
-  paddingBottom: 24,
+
+  // key: padding shrinks on short screens
+  paddingTop: "clamp(12px, 6vh, 56px)",
+  paddingBottom: "clamp(12px, 4vh, 24px)",
+
   boxSizing: "border-box",
-  overflow: "hidden"
+  overflow: "hidden",
 };
 
 const wrapDesktopCenter = {
@@ -727,23 +730,29 @@ if (renderStage === "lobby") {
         />
       )}
 
-      <p style={{ marginBottom: 24, opacity: 0.7 }}>
-        Room Code
-      </p>
+      <p style={{ marginBottom: "clamp(8px, 2vh, 24px)", opacity: 0.7 }}>
+  Room Code
+</p>
 
       {/* Room code */}
-      <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: 6 }}>
-        {roomCode}
-      </div>
+      <div
+  style={{
+    fontSize: "clamp(26px, 4.5vh, 36px)",
+    fontWeight: 800,
+    letterSpacing: 6
+  }}
+>
+  {roomCode}
+</div>
 
-      <p style={{ marginBottom: 24, opacity: 0.7 }} />
+      <p style={{ marginBottom: "clamp(10px, 3vh, 24px)", opacity: 0.7 }} />
 
       {/* Players */}
       <div
   style={{
     display: "flex",
     gap: 16,
-    marginBottom: 28,
+    marginBottom: "clamp(10px, 3vh, 28px)",
     width: "100%",
     justifyContent: "center"
   }}
@@ -767,7 +776,7 @@ if (renderStage === "lobby") {
       display: "flex",
       gap: 12,
       marginTop: 8,
-      flexWrap: isMobile ? "wrap" : "nowrap",
+      flexWrap: "wrap",
       justifyContent: "center",
       maxWidth: isMobile ? 340 : "none"
     }}
@@ -818,10 +827,10 @@ if (renderStage === "lobby") {
       {/* Actions */}
       <div
   style={{
-    marginTop: 32,
+    marginTop: "clamp(12px, 3vh, 32px)",
     display: "flex",
     gap: 14,
-    paddingBottom: 24
+    paddingBottom: 0
   }}
 >
         <FoopyButton
@@ -1069,7 +1078,7 @@ const lobbyCard = {
   width: "42vw",
   maxWidth: 190,
   minWidth: 140,
-  height: 160,
+  height: "clamp(120px, 20vh, 160px)",
   borderRadius: 16,
   background: "#ffffff",
   display: "flex",
