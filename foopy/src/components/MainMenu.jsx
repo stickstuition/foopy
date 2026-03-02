@@ -115,22 +115,35 @@ function LeaderboardButton({ onClick, mobile }) {
 
 function ProfileButton({ user, onOpen, mobile }) {
   const badge = BADGES[user.badgeEquipped] ?? BADGES.stk;
+  const [hovered, setHovered] = useState(false);
+
+  const coins = user.coins ?? 0;
 
   return (
     <div
-      onClick={onOpen}
-      style={profileButton(mobile)}
-      title={
-        !mobile
-          ? `${user.username}\n${user.coins ?? 0} coins`
-          : undefined
-      }
+      style={{ position: "relative", display: "inline-flex" }}
+      onMouseEnter={() => {
+        if (!mobile) setHovered(true);
+      }}
+      onMouseLeave={() => {
+        if (!mobile) setHovered(false);
+      }}
     >
-      <img
-        src={badge.icon}
-        alt=""
-        style={{ width: "70%", height: "70%", objectFit: "contain" }}
-      />
+      {/* Desktop-only hover tooltip */}
+      {!mobile && hovered && (
+        <div style={profileTooltip}>
+          <div style={profileTooltipName}>{user.username}</div>
+          <div style={profileTooltipCoins}>🪙 {coins} coins</div>
+        </div>
+      )}
+
+      <div onClick={onOpen} style={profileButton(mobile)} title={mobile ? undefined : ""}>
+        <img
+          src={badge.icon}
+          alt=""
+          style={{ width: "70%", height: "70%", objectFit: "contain" }}
+        />
+      </div>
     </div>
   );
 }
@@ -279,16 +292,46 @@ const hudButton = (mobile) => ({
 });
 
 const profileButton = (mobile) => ({
-  width: mobile ? 42 : 60,
-  height: mobile ? 42 : 60,
+  width: mobile ? 42 : 72,
+  height: mobile ? 42 : 72,
   borderRadius: "50%",
   background: "linear-gradient(to bottom, #666, #2f2f2f)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   overflow: "hidden",
-  cursor: "pointer"
+  cursor: "pointer",
+  boxShadow: mobile ? undefined : "0 8px 18px rgba(0,0,0,0.35)"
 });
+
+const profileTooltip = {
+  position: "absolute",
+  top: "50%",
+  right: "calc(100% + 10px)",
+  transform: "translateY(-50%)",
+  background: "rgba(0,0,0,0.78)",
+  color: "#fff",
+  padding: "10px 12px",
+  borderRadius: 12,
+  boxShadow: "0 10px 24px rgba(0,0,0,0.35)",
+  whiteSpace: "nowrap",
+  zIndex: 50,
+  pointerEvents: "none"
+};
+
+const profileTooltipName = {
+  fontWeight: 900,
+  fontStyle: "italic",
+  fontSize: 14,
+  lineHeight: 1.1
+};
+
+const profileTooltipCoins = {
+  marginTop: 4,
+  fontSize: 12,
+  opacity: 0.9,
+  fontWeight: 800
+};
 
 const logoCloudWrap = {
   position: "absolute",
