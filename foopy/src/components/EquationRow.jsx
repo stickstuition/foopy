@@ -114,11 +114,11 @@ export default function EquationRow({
         {safePlayers.map((p, index) => (
           <div
             key={`${p.name}-${index}`}
-            style={{
+                        style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: isMobile ? 6 : 10
+              gap: isMobile ? 6 : 14
             }}
           >
                         <div
@@ -137,10 +137,28 @@ export default function EquationRow({
                 </span>
               )}
             </div>
-
-            {showNames && <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>{p.name}</div>}
+{showNames && (
+  <div
+    style={{
+      fontWeight: 800,
+      fontSize: isMobile ? 14 : 18,
+      marginTop: isMobile ? 0 : 6,
+      lineHeight: 1.05
+    }}
+  >
+    {p.name}
+  </div>
+)}
+            
                         {showNumbers && getJerseyNumber(p) != null && (
-  <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.85 }}>
+  <div
+    style={{
+      fontSize: isMobile ? 12 : 13,
+      opacity: 0.85,
+      marginTop: isMobile ? 0 : 2,
+      lineHeight: 1
+    }}
+  >
     #{getJerseyNumber(p)}
   </div>
 )}
@@ -185,13 +203,27 @@ export default function EquationRow({
           </div>
 
           {showNames && (
-            <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18 }}>
-              {answerPlayer ? answerPlayer.name : ""}
-            </div>
-          )}
+  <div
+    style={{
+      fontWeight: 800,
+      fontSize: isMobile ? 14 : 18,
+      marginTop: isMobile ? 0 : 6,
+      lineHeight: 1.05
+    }}
+  >
+    {answerPlayer ? answerPlayer.name : ""}
+  </div>
+)}
 
                     {showNumbers && answerPlayer && getJerseyNumber(answerPlayer) != null && (
-  <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.85 }}>
+  <div
+    style={{
+      fontSize: isMobile ? 12 : 13,
+      opacity: 0.85,
+      marginTop: isMobile ? 0 : 2,
+      lineHeight: 1
+    }}
+  >
     #{getJerseyNumber(answerPlayer)}
   </div>
 )}
