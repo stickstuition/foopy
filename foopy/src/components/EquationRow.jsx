@@ -104,15 +104,15 @@ export default function EquationRow({
         }}
       >
         <div
-          ref={innerRef}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap,
-            transform: `scale(${scale})`,
-            transformOrigin: "top center"
-          }}
-        >
+  ref={innerRef}
+  style={{
+    display: "flex",
+    alignItems: "flex-start", // ✅ top-align columns so the badge card doesn't drop
+    gap,
+    transform: `scale(${scale})`,
+    transformOrigin: "top center"
+  }}
+>
         {safePlayers.map((p, index) => (
           <div
             key={`${p.name}-${index}`}

@@ -139,10 +139,15 @@ function ProfileButton({ user, onOpen, mobile }) {
 
       <div onClick={onOpen} style={profileButton(mobile)} title={mobile ? undefined : ""}>
         <img
-          src={badge.icon}
-          alt=""
-          style={{ width: "70%", height: "70%", objectFit: "contain" }}
-        />
+  src={badge.icon}
+  alt=""
+  style={{
+    width: badge.fullArt ? "100%" : "70%",
+    height: badge.fullArt ? "100%" : "70%",
+    objectFit: badge.fullArt ? "cover" : "contain",
+    objectPosition: "center"
+  }}
+/>
       </div>
     </div>
   );
