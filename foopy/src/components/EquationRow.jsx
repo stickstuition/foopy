@@ -75,7 +75,7 @@ export default function EquationRow({
     };
   }, []);
 
-    const cardSize = isMobile ? "small" : "large";
+      const cardSize = isMobile ? "small" : "medium";
 
   // Slightly tighter on desktop so the bottom (names/numbers) has room
   const opSize = isMobile ? 28 : 38;
@@ -83,7 +83,7 @@ export default function EquationRow({
 
   // Height of the "card row" (cards + operators + equals + badge)
   // Used to align "=" with the players row (not the names/numbers).
-  const cardRowHeight = isMobile ? 120 : 160;
+    const cardRowHeight = isMobile ? 132 : 192;
   return (
     <div
       ref={outerRef}
@@ -121,8 +121,7 @@ export default function EquationRow({
     display: "flex",
     alignItems: "center",
     gap: isMobile ? 10 : 14,
-    height: cardRowHeight,
-    overflow: "hidden"
+    height: cardRowHeight
   }}
 >
               <PlayerCard image={p.image} size={cardSize} />
@@ -166,8 +165,7 @@ export default function EquationRow({
     height: cardRowHeight,
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden"
+    justifyContent: "center"
   }}
 >
           <span style={{ fontSize: opSize, fontWeight: 900 }}>=</span>
@@ -178,7 +176,7 @@ export default function EquationRow({
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: isMobile ? 6 : 10
+            gap: isMobile ? 6 : 14
           }}
         >
                     <div
@@ -189,7 +187,19 @@ export default function EquationRow({
               justifyContent: "center"
             }}
           >
-            {!answerPlayer && <UnknownPlayerCard teamKey={teamKey} />}
+                        {!answerPlayer && (
+              <div
+                style={{
+                  width: isMobile ? 96 : 140,
+                  height: isMobile ? 132 : 192,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <UnknownPlayerCard teamKey={teamKey} />
+              </div>
+            )}
 
             {answerPlayer && (
               <div style={{ animation: "answerFade 0.6s ease forwards" }}>

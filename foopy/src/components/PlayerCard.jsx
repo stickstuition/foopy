@@ -1,6 +1,7 @@
 export default function PlayerCard({ image, size = "large" }) {
-  const sizes = {
+    const sizes = {
     large: { width: 160, height: 220 },
+    medium: { width: 140, height: 192 }, // desktop equation row
     small: { width: 96, height: 132 }
   };
 
