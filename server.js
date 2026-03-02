@@ -315,7 +315,7 @@ function ensureEntitlementBadges(user) {
 
 
   // ---------- Founder badge ----------
-  if (user.id <= 10000 && !owned.includes("founder")) {
+  if (user.id <= 1000 && !owned.includes("founder")) {
     owned.push("founder");
     changed = true;
   }
@@ -562,6 +562,16 @@ app.get("/auth/me", async (req, res) => {
     return res.status(404).json({ error: "User not found" });
   }
 
+  // ✅ Apply entitlement badges (founder/starter) and persist if needed
+  const ent = ensureEntitlementBadges(user);
+
+  if (ent.changed) {
+    await pool.query(
+      `UPDATE users SET badges_owned = $1 WHERE id = $2`,
+      [JSON.stringify(ent.badgesOwned), userId]
+    );
+  }
+
   res.json({
     user: {
       id: user.id,
@@ -576,7 +586,7 @@ app.get("/auth/me", async (req, res) => {
       onboarded: !!user.onboarded,
       coins: user.coins ?? 0,
       badgeEquipped: user.badge_equipped ?? null,
-      badgesOwned: parseBadgesOwned(user.badges_owned)
+      badgesOwned: ent.badgesOwned
     }
   });
 });
@@ -614,6 +624,23 @@ app.post("/auth/onboarding", async (req, res) => {
       userId
     ]
   );
+
+    // ✅ Re-apply entitlement badges (founder/starter) after onboarding writes badges_owned
+  const { rows: entRows } = await pool.query(
+    `SELECT id, favourite_team, badges_owned FROM users WHERE id = $1`,
+    [userId]
+  );
+
+  const entUser = entRows[0];
+  if (entUser) {
+    const ent = ensureEntitlementBadges(entUser);
+    if (ent.changed) {
+      await pool.query(
+        `UPDATE users SET badges_owned = $1 WHERE id = $2`,
+        [JSON.stringify(ent.badgesOwned), userId]
+      );
+    }
+  }
 
   res.json({
     ok: true,
@@ -1271,12 +1298,24 @@ app.post("/badges/equip", async (req, res) => {
     const { badgeId } = req.body;
     if (!badgeId) return res.status(400).json({ error: "Missing badgeId" });
 
-    const { rows } = await pool.query(
-      `SELECT badges_owned FROM users WHERE id = $1`,
+        const { rows } = await pool.query(
+      `SELECT id, favourite_team, badges_owned FROM users WHERE id = $1`,
       [userId]
     );
 
-    const owned = parseBadgesOwned(rows[0]?.badges_owned);
+    const entUser = rows[0];
+    const ent = entUser
+      ? ensureEntitlementBadges(entUser)
+      : { badgesOwned: [], changed: false };
+
+    if (ent.changed) {
+      await pool.query(
+        `UPDATE users SET badges_owned = $1 WHERE id = $2`,
+        [JSON.stringify(ent.badgesOwned), userId]
+      );
+    }
+
+    const owned = ent.badgesOwned;
 
     if (!owned.includes(badgeId)) {
       return res.status(400).json({ error: "Badge not owned" });
@@ -1308,13 +1347,26 @@ app.post("/badges/buy", async (req, res) => {
       return res.status(400).json({ error: "Invalid badge" });
     }
 
-    const { rows } = await pool.query(
-      `SELECT coins, badges_owned FROM users WHERE id = $1`,
+        const { rows } = await pool.query(
+      `SELECT id, favourite_team, coins, badges_owned FROM users WHERE id = $1`,
       [userId]
     );
 
-    const coins = rows[0]?.coins ?? 0;
-    const owned = parseBadgesOwned(rows[0]?.badges_owned);
+    const row = rows[0];
+    const coins = row?.coins ?? 0;
+
+    const ent = row
+      ? ensureEntitlementBadges(row)
+      : { badgesOwned: [], changed: false };
+
+    if (ent.changed) {
+      await pool.query(
+        `UPDATE users SET badges_owned = $1 WHERE id = $2`,
+        [JSON.stringify(ent.badgesOwned), userId]
+      );
+    }
+
+    const owned = ent.badgesOwned;
 
     if (owned.includes(badgeId)) {
       return res.json({ ok: true });
