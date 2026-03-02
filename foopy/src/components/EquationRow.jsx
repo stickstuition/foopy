@@ -84,11 +84,6 @@ export default function EquationRow({
   // Height of the "card row" (cards + operators + equals + badge)
   // Used to align "=" with the players row (not the names/numbers).
   const cardRowHeight = isMobile ? 120 : 160;
-  useEffect(() => {
-    console.log("EquationRow showNumbers:", showNumbers);
-    console.log("EquationRow sample player:", safePlayers?.[0]);
-    console.log("EquationRow sample jersey:", getJerseyNumber(safePlayers?.[0]));
-  }, [showNumbers, safePlayers]);
   return (
     <div
       ref={outerRef}
@@ -122,13 +117,14 @@ export default function EquationRow({
             }}
           >
                         <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: isMobile ? 10 : 14,
-                height: cardRowHeight
-              }}
-            >
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: isMobile ? 10 : 14,
+    height: cardRowHeight,
+    overflow: "hidden"
+  }}
+>
               <PlayerCard image={p.image} size={cardSize} />
 
               {index < safePlayers.length - 1 && (
@@ -142,7 +138,7 @@ export default function EquationRow({
     style={{
       fontWeight: 800,
       fontSize: isMobile ? 14 : 18,
-      marginTop: isMobile ? 0 : 6,
+      marginTop: isMobile ? 0 : 12,
       lineHeight: 1.05
     }}
   >
@@ -166,14 +162,14 @@ export default function EquationRow({
         ))}
 
                 <div
-          style={{
-            height: cardRowHeight,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 6px"
-          }}
-        >
+  style={{
+    height: cardRowHeight,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden"
+  }}
+>
           <span style={{ fontSize: opSize, fontWeight: 900 }}>=</span>
         </div>
 
@@ -207,7 +203,7 @@ export default function EquationRow({
     style={{
       fontWeight: 800,
       fontSize: isMobile ? 14 : 18,
-      marginTop: isMobile ? 0 : 6,
+      marginTop: isMobile ? 0 : 12,
       lineHeight: 1.05
     }}
   >
