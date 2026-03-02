@@ -480,9 +480,10 @@ if (gameState === "countdown") {
 const gameContent = {
   width: "100%",
   height: "100%",
-  paddingTop: 72, // ⬅️ clears HUD + timer
+  paddingTop: 56,          // was 72 → moves content up
+  paddingBottom: 8,        // small safety so bottom UI isn’t clipped
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 12
+  gap: 10
 };

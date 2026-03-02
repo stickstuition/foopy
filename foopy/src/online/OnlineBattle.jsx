@@ -37,6 +37,13 @@ const wrapDesktop = {
   overflow: "hidden"
 };
 
+const wrapDesktopCenter = {
+  ...wrapDesktop,
+  justifyContent: "center",
+  paddingTop: 0,
+  paddingBottom: 0
+};
+
 const wrapMobile = {
   width: "100%",
   height: "100%",
@@ -103,7 +110,7 @@ const muted = {
 
 const btn = {
   height: 52,
-  minWidth: 160,
+  minWidth: 140,
   borderRadius: 14,
   display: "flex",
   alignItems: "center",
@@ -188,7 +195,11 @@ const [roundDuration, setRoundDuration] = useState(null);
   const { updateCoins } = useAuth();
   const isHost = me === "host";
   const isMobile = useIsMobile();
-  const wrapStyle = isMobile ? wrapMobile : wrapDesktop;
+  const wrapStyle = isMobile
+  ? wrapMobile
+  : renderStage === "join"
+  ? wrapDesktopCenter
+  : wrapDesktop;
   /* ---------- HELPERS ---------- */
 
   const generateRoomCode = useCallback(() => {
@@ -742,15 +753,15 @@ if (renderStage === "lobby") {
   <p style={{ fontWeight: 700 }}>Wager</p>
 
   <div
-  style={{
-    display: "flex",
-    gap: 12,
-    marginTop: 8,
-    flexWrap: "wrap",
-    justifyContent: "center",
-    maxWidth: 340
-  }}
->
+    style={{
+      display: "flex",
+      gap: 12,
+      marginTop: 8,
+      flexWrap: isMobile ? "wrap" : "nowrap",
+      justifyContent: "center",
+      maxWidth: isMobile ? 340 : "none"
+    }}
+  >
 
     {[10, 50, 100, 500].map((amt) => {
       const opponentRole = me === "host" ? "guest" : "host";
