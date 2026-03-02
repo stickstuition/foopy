@@ -480,8 +480,9 @@ if (gameState === "countdown") {
 const gameContent = {
   width: "100%",
   height: "100%",
-  paddingTop: 56,          // was 72 → moves content up
-  paddingBottom: 8,        // small safety so bottom UI isn’t clipped
+  boxSizing: "border-box",
+  paddingTop: 40,          // was 56 → moves content up (desktop only)
+  paddingBottom: 28,       // was 8  → prevents bottom UI clipping
   display: "flex",
   flexDirection: "column",
   alignItems: "center",

@@ -31,7 +31,7 @@ const wrapDesktop = {
   alignItems: "center",
   justifyContent: "flex-start",
   textAlign: "center",
-  paddingTop: 72,
+  paddingTop: 56,
   paddingBottom: 24,
   boxSizing: "border-box",
   overflow: "hidden"
