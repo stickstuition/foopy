@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { API_URL } from "../config/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 /* ---------- PERIOD TABS ---------- */
 const PERIODS = [
@@ -42,6 +43,7 @@ const METRICS = [
 ];
 
 export default function LeaderboardModal({ open, onClose }) {
+    const isMobile = useIsMobile(480);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [metric, setMetric] = useState("high_score");
@@ -81,7 +83,7 @@ useEffect(() => {
 
   return createPortal(
     <div style={backdrop} onMouseDown={onClose}>
-      <div style={modal} onMouseDown={e => e.stopPropagation()}>
+            <div style={modal(isMobile)} onMouseDown={e => e.stopPropagation()}>
         {/* ---------- HEADER ---------- */}
         <div style={header}>
           <div style={title}>LEADERBOARD</div>
@@ -89,8 +91,8 @@ useEffect(() => {
         </div>
 
         {/* ---------- FILTER ROW ---------- */}
-        <div style={filterRow}>
-          <div style={metricGroup}>
+                <div style={filterRow(isMobile)}>
+                    <div style={metricGroup(isMobile)}>
             {METRICS.map(m => (
               <Pill
                 key={m.key}
@@ -103,7 +105,7 @@ useEffect(() => {
             ))}
           </div>
 
-          <div style={periodGroup}>
+                    <div style={periodGroup(isMobile)}>
             {PERIODS.map(p => (
               <Pill
                 key={p.key}
@@ -118,7 +120,7 @@ useEffect(() => {
         </div>
 
         {/* ---------- BODY ---------- */}
-        <div style={body}>
+                <div style={body(isMobile)}>
           {loading && <div style={note}>Loading leaderboard…</div>}
 
           {!loading && rows.length === 0 && (
@@ -197,17 +199,17 @@ const backdrop = {
   zIndex: 9999
 };
 
-const modal = {
-  width: "min(900px, 96vw)",
-  height: 520,
+const modal = (mobile) => ({
+  width: mobile ? "min(980px, 100vw)" : "min(900px, 96vw)",
+  height: mobile ? "100svh" : 520,
   background: "#f7f8fa",
-  borderRadius: 18,
+  borderRadius: mobile ? 0 : 18,
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
   color: "#111",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.35)"
-};
+  boxShadow: mobile ? "none" : "0 20px 60px rgba(0,0,0,0.35)"
+});
 
 const header = {
   display: "flex",
@@ -220,16 +222,33 @@ const header = {
 const title = { fontSize: 26, fontWeight: 900, letterSpacing: 1 };
 const closeBtn = { background: "transparent", border: "none", fontSize: 24 };
 
-const filterRow = {
+const filterRow = (mobile) => ({
   display: "flex",
+  flexDirection: mobile ? "column" : "row",
   justifyContent: "space-between",
-  alignItems: "center",
-  padding: "12px 18px",
+  alignItems: mobile ? "stretch" : "center",
+  gap: mobile ? 10 : 0,
+  padding: mobile ? "10px 12px" : "12px 18px",
   borderBottom: "1px solid rgba(0,0,0,0.08)"
-};
+});
 
-const metricGroup = { display: "flex", gap: 8 };
-const periodGroup = { display: "flex", gap: 10 };
+const metricGroup = (mobile) => ({
+  display: "flex",
+  gap: 8,
+  overflowX: mobile ? "auto" : "visible",
+  WebkitOverflowScrolling: "touch",
+  whiteSpace: "nowrap",
+  paddingBottom: mobile ? 2 : 0
+});
+
+const periodGroup = (mobile) => ({
+  display: "flex",
+  gap: 10,
+  overflowX: mobile ? "auto" : "visible",
+  WebkitOverflowScrolling: "touch",
+  whiteSpace: "nowrap",
+  paddingBottom: mobile ? 2 : 0
+});
 
 const metricTab = {
   padding: "8px 16px",
@@ -263,7 +282,10 @@ const periodTabActive = {
   boxShadow: "0 3px 0 rgba(0,0,0,0.25)"
 };
 
-const body = { padding: 18, overflowY: "auto" };
+const body = (mobile) => ({
+  padding: mobile ? 12 : 18,
+  overflowY: "auto"
+});
 const note = { opacity: 0.6 };
 
 const list = { display: "flex", flexDirection: "column", gap: 6 };
