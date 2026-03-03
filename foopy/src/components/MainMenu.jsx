@@ -18,7 +18,7 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
   return (
     <div style={isMobile ? mobileWrap : desktopWrap}>
       {/* AFL LOGO CLOUD */}
-      {!isMobile && <AFLLogoCloud />}
+<AFLLogoCloud mobile={isMobile} />
 
       {/* MODALS */}
       {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
@@ -157,7 +157,7 @@ function ProfileButton({ user, onOpen, mobile }) {
    AFL LOGO CLOUD (REAL, FROM /public/logos)
    ========================================================= */
 
-function AFLLogoCloud() {
+function AFLLogoCloud({ mobile }) {
   const clubs = [
     "AdelaideCrows",
     "BrisbaneLions",
@@ -180,7 +180,7 @@ function AFLLogoCloud() {
   ];
 
   return (
-    <div style={logoCloudWrap}>
+    <div style={logoCloudWrap(mobile)}>
       {clubs.map((club) => (
         <img
           key={club}
@@ -213,8 +213,7 @@ const mobileWrap = {
   overflow: "hidden",
   display: "flex",
   justifyContent: "center",
-  alignItems: "flex-start",
-  paddingTop: 56
+  alignItems: "center"
 };
 
 const content = (mobile) => ({
@@ -338,17 +337,17 @@ const profileTooltipCoins = {
   fontWeight: 800
 };
 
-const logoCloudWrap = {
+const logoCloudWrap = (mobile) => ({
   position: "absolute",
   inset: 0,
-  padding: 80,
+  padding: mobile ? 28 : 80,
   display: "grid",
-  gridTemplateColumns: "repeat(6, 1fr)",
-  gap: 32,
-  opacity: 0.06,
+  gridTemplateColumns: mobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)",
+  gap: mobile ? 18 : 32,
+  opacity: mobile ? 0.05 : 0.06,
   pointerEvents: "none",
   zIndex: 0
-};
+});
 
 const logoCloudImg = {
   width: "100%",
