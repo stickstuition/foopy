@@ -1,10 +1,10 @@
 // foopy/src/components/BattleScoreboard.jsx
 import { BADGES } from "../engine/badges";
-
-const isMobile = window.innerWidth <= 768;
+import useIsMobile from "../hooks/useIsMobile";
 
 
 export default function BattleScoreboard({ me, scores, profiles, singlePlayer, delta }) {
+    const isMobile = useIsMobile(768);
   const opponentRole = me === "host" ? "guest" : "host";
 
   const myProfile = profiles?.[me] ?? null;
@@ -19,7 +19,7 @@ export default function BattleScoreboard({ me, scores, profiles, singlePlayer, d
   const showOpponentRow = !singlePlayer && !!oppProfile;
 
   return (
-    <div style={wrap}>
+    <div style={wrap(isMobile)}>
       <Row
         label={myName}
         score={scores?.[me] ?? 0}
@@ -75,7 +75,7 @@ function Row({ label, score, badgeIcon, emphasis, delta = null }) {
 
 /* ---------- styles ---------- */
 
-const wrap = {
+const wrap = (isMobile) => ({
   position: "absolute",
   left: isMobile ? "50%" : 24,
   bottom: isMobile ? "auto" : 24,
@@ -84,7 +84,7 @@ const wrap = {
   width: isMobile ? "calc(100% - 24px)" : 220,
   maxWidth: 360,
   zIndex: 20
-};
+});
 
 
 const row = {

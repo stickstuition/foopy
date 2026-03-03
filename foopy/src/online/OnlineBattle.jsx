@@ -25,26 +25,24 @@ const TEAM_PICK_SECONDS = 10;
 
 const wrapDesktop = {
   width: "100%",
-  height: "100vh",
+  height: "100%",                 // fit GamePanel content area
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "flex-start",
+  justifyContent: "flex-start",   // avoid “floating” when zoomed out
   textAlign: "center",
-
-  // key: padding shrinks on short screens
-  paddingTop: "clamp(12px, 6vh, 56px)",
-  paddingBottom: "clamp(12px, 4vh, 24px)",
-
+  paddingTop: 24,
+  paddingBottom: 24,
   boxSizing: "border-box",
-  overflow: "hidden",
+  overflowY: "auto",              // ✅ if zoom makes it taller than the panel, allow scroll
+  overflowX: "hidden",
 };
 
 const wrapDesktopCenter = {
   ...wrapDesktop,
   justifyContent: "center",
-  paddingTop: 0,
-  paddingBottom: 0
+  paddingTop: 24,
+  paddingBottom: 24
 };
 
 const wrapDesktopQuestion = {
@@ -74,7 +72,7 @@ const wrapMobile = {
 const actions = {
   display: "flex",
   gap: 14,
-  marginTop: 24,
+  marginTop: "clamp(12px, 3vh, 24px)",
   flexWrap: "wrap",
   justifyContent: "center",
 };
@@ -87,12 +85,12 @@ const codeStyle = {
 };
 
 const codeInput = {
-  fontSize: 20,
-  padding: "10px 14px",
+  fontSize: "clamp(16px, 2.2vh, 20px)",
+  padding: "clamp(8px, 1.6vh, 10px) clamp(12px, 2vw, 14px)",
   textAlign: "center",
   borderRadius: 8,
   border: "1px solid #aaa",
-  marginTop: 12,
+  marginTop: "clamp(8px, 2vh, 12px)",
 };
 
 const coinStyle = {
@@ -684,7 +682,8 @@ if (renderStage === "join") {
         />
       )}
 
-      <h1>Join Game</h1>
+            <h1 style={{ margin: 0 }}>Join Game</h1>
+                  <div style={{ height: "clamp(8px, 2vh, 16px)" }} />
       <input
         placeholder="Enter 5-letter code"
         value={roomCode}

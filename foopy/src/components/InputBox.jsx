@@ -17,20 +17,24 @@ export default function InputBox({
 
   const inputRef = useRef(null);
 
-  useEffect(() => {
+  function submitFromInput(raw = value) {
+    const trimmed = (raw ?? "").trim();
+    if (!trimmed) {
+      setErrorFlash(true);
+      setTimeout(() => setErrorFlash(false), 200);
+      return;
+    }
+
+    if (suggestions.length > 0) {
+      onSelectSuggestion(suggestions[0].name);
+    } else {
+      onSubmit(trimmed);
+    }
+  }
+    useEffect(() => {
+    // Initial focus (works on many Android browsers; iOS may require user gesture)
     inputRef.current?.focus();
   }, []);
-
-  // keep keyboard open on mobile
-  useEffect(() => {
-    if (!isMobile) return;
-    const id = setInterval(() => {
-      if (document.activeElement !== inputRef.current) {
-        inputRef.current?.focus();
-      }
-    }, 350);
-    return () => clearInterval(id);
-  }, [isMobile]);
 
   useEffect(() => {
     if (resultFlash !== "wrong") return;
@@ -52,17 +56,7 @@ export default function InputBox({
       }
 
       if (e.key === "Enter") {
-        if (!value.trim()) {
-          setErrorFlash(true);
-          setTimeout(() => setErrorFlash(false), 200);
-          return;
-        }
-
-        if (suggestions.length > 0) {
-          onSelectSuggestion(suggestions[0].name);
-        } else {
-          onSubmit(value);
-        }
+                submitFromInput();
       }
     }
 
@@ -71,7 +65,12 @@ export default function InputBox({
   }, [isMobile, value, suggestions, onSubmit, onSelectSuggestion, onSkip]);
 
   return (
-    <div
+        <div
+      onPointerDown={() => {
+        if (!isMobile) return;
+        // User gesture focus => re-opens keyboard on iOS
+        inputRef.current?.focus();
+      }}
       style={{
         width: "100%",
         maxWidth: 360,
@@ -88,9 +87,16 @@ export default function InputBox({
   value={value}
   placeholder="Enter player name"
   onChange={(e) => onChange(e.target.value)}
-  onBlur={() => {
+      onKeyDown={(e) => {
     if (!isMobile) return;
-    setTimeout(() => inputRef.current?.focus(), 0);
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    submitFromInput();
+  }}
+    onBlur={() => {
+    if (!isMobile) return;
+    // If anything causes blur, immediately restore focus
+    requestAnimationFrame(() => inputRef.current?.focus());
   }}
   autoComplete="off"
   autoCorrect="off"

@@ -1,4 +1,5 @@
 import teams from "../engine/players";
+import useIsMobile from "../hooks/useIsMobile";
 
 /* ---------- LOGO MAP ---------- */
 
@@ -26,25 +27,26 @@ const teamLogos = {
 /* ---------- MAIN ---------- */
 
 export default function TeamSelect({ selector, me, options, onSelect }) {
+    const isMobile = useIsMobile(768);
   const isMyTurn = selector === me;
 
   // Safety: no options yet
   if (!Array.isArray(options) || options.length !== 3) {
     return (
-      <div style={wrap}>
+          <div style={wrap(isMobile)}>
         <h1 style={{ marginBottom: 24 }}>Loading teams…</h1>
         <p style={{ opacity: 0.6 }}>Waiting for server</p>
       </div>
     );
   }
 
-  return (
-    <div style={wrap}>
-      <h1 style={{ marginBottom: 24 }}>
+    return (
+    <div style={wrap(isMobile)}>
+            <h1 style={{ marginBottom: "clamp(10px, 2.5vh, 24px)" }}>
         {isMyTurn ? "Choose a Team" : "Opponent is choosing..."}
       </h1>
 
-      <div style={cardRow}>
+            <div style={cardRow(isMobile)}>
         {options.map((code) => {
           const logo = teamLogos[code];
 
@@ -56,8 +58,8 @@ export default function TeamSelect({ selector, me, options, onSelect }) {
           return (
             <div
               key={code}
-              style={{
-                ...card,
+                            style={{
+                ...card(isMobile),
                 ...(isMyTurn ? {} : cardDisabled),
               }}
               onClick={() => {
@@ -65,7 +67,11 @@ export default function TeamSelect({ selector, me, options, onSelect }) {
                 onSelect(code);
               }}
             >
-              <img src={logo} alt={code} style={{ width: 90 }} />
+                             <img
+                src={logo}
+                alt={code}
+                style={{ width: isMobile ? 68 : "clamp(64px, 8vw, 90px)" }}
+              />
             </div>
           );
         })}
@@ -76,7 +82,7 @@ export default function TeamSelect({ selector, me, options, onSelect }) {
 
 /* ---------- STYLES ---------- */
 
-const wrap = {
+const wrap = (mobile) => ({
   width: "100%",
   height: "100%",
   display: "flex",
@@ -84,16 +90,20 @@ const wrap = {
   alignItems: "center",
   justifyContent: "center",
   textAlign: "center",
-};
+  padding: mobile ? "0 12px" : 0,
+  boxSizing: "border-box"
+});
 
-const cardRow = {
+const cardRow = (mobile) => ({
   display: "flex",
-  gap: 28,
-};
+  gap: mobile ? 12 : 28,
+  width: "100%",
+  justifyContent: "center"
+});
 
-const card = {
-  width: 140,
-  height: 180,
+const card = (mobile) => ({
+  width: mobile ? 104 : "clamp(110px, 16vw, 140px)",
+  height: mobile ? 140 : "clamp(130px, 22vh, 180px)",
   borderRadius: 18,
   background: "#f1f1f1",
   display: "flex",
@@ -101,8 +111,8 @@ const card = {
   justifyContent: "center",
   cursor: "pointer",
   transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-};
+  boxShadow: "0 10px 25px rgba(0,0,0,0.15)"
+});
 
 const cardDisabled = {
   cursor: "not-allowed",

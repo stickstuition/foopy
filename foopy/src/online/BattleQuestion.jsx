@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { socket } from "../online/socket";
-
+import useIsMobile from "../hooks/useIsMobile";
 import EquationRow from "../components/EquationRow";
 import InputBox from "../components/InputBox";
 import TimerCircle from "../components/TimerCircle";
@@ -17,6 +17,7 @@ export default function BattleQuestion({
   isOnline,
   profiles      // 👈 ADD THIS
 }) {
+    const isMobile = useIsMobile(768);
 
   const [time, setTime] = useState(duration ?? 20);
   const [input, setInput] = useState("");
@@ -207,8 +208,8 @@ useEffect(() => {
 
   if (!question) return null;
 
-  return (
-    <div style={wrap}>
+    return (
+    <div style={wrap(isMobile)}>
       {/* BOTTOM-LEFT SCOREBOARD */}
 <BattleScoreboard
   me={me}
@@ -218,9 +219,9 @@ useEffect(() => {
 
 
       {/* MAIN GAME AREA */}
-      <div
+            <div
         style={{
-          ...gameArea,
+          ...gameArea(isMobile),
           animation: iWon
             ? "glowGreen 1.1s ease forwards"
             : iLost
@@ -254,7 +255,7 @@ useEffect(() => {
       </div>
 
       {/* FEED */}
-      <div style={feedWrap}>
+            <div style={feedWrap(isMobile)}>
         {feed.map((f) => (
           <div
             key={f.id}
@@ -278,37 +279,46 @@ useEffect(() => {
 
 /* ---------- Styles ---------- */
 
-const wrap = {
+const wrap = (mobile) => ({
   width: "100%",
-  flex: 1,                 // 👈 IMPORTANT
+  height: "100%",
   position: "relative",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden"
-};
+  justifyContent: mobile ? "flex-start" : "center",
+  overflow: "hidden",
+  // Mobile: keep content below the scoreboard (which is absolute top)
+  paddingTop: mobile ? 78 : 0,
+  boxSizing: "border-box"
+});
 
-
-const gameArea = {
+const gameArea = (mobile) => ({
   width: "100%",
   maxWidth: 900,
   borderRadius: 18,
-  padding: 24,
+  padding: mobile ? 14 : 24,
   display: "flex",
   flexDirection: "column",
-  alignItems: "center"
-};
+  alignItems: "center",
+  gap: mobile ? 10 : 0,
+  // Mobile: allow input to sit comfortably without being pushed off-screen
+  flex: mobile ? 1 : undefined,
+  justifyContent: mobile ? "flex-start" : undefined
+});
 
-const feedWrap = {
+const feedWrap = (mobile) => ({
   position: "absolute",
-  right: 2,
-  bottom: 100,
-  width: 260,
+  right: mobile ? 12 : 2,
+  top: mobile ? 86 : "auto",
+  bottom: mobile ? "auto" : 100,
+  width: mobile ? "calc(100% - 24px)" : 260,
+  maxWidth: mobile ? 420 : undefined,
   display: "flex",
   flexDirection: "column-reverse",
-  gap: 6
-};
+  gap: 6,
+  pointerEvents: "none"
+});
 
 
 const feedItem = {

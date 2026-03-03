@@ -7,13 +7,18 @@ export default function Autocomplete({ suggestions, onSelect }) {
       maxHeight: "160px",
       overflowY: "auto"
     }}>
-      {suggestions.map(p => (
+            {suggestions.map((p) => (
         <div
           key={p.name}
-          onClick={() => onSelect(p.name)}
+          onPointerDown={(e) => {
+            // Mobile: prevent input blur / keyboard dismissal
+            e.preventDefault();
+            onSelect(p.name);
+          }}
           style={{
             padding: "10px",
-            cursor: "pointer"
+            cursor: "pointer",
+            userSelect: "none"
           }}
         >
           {p.name}

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ballUpVideo from "../assets/ballup.mp4";
+import ballUpMobileVideo from "../assets/ballupmobile.mp4";
+import useIsMobile from "../hooks/useIsMobile";
 
 /* ---------- styles ---------- */
 
@@ -23,6 +25,7 @@ const videoStyle = {
 /* ---------- component ---------- */
 
 export default function BallUpAnimation({ onComplete }) {
+    const isMobile = useIsMobile(480);
   const videoRef = useRef(null);
   const [fadingOut, setFadingOut] = useState(false);
 
@@ -60,7 +63,7 @@ export default function BallUpAnimation({ onComplete }) {
     >
       <video
         ref={videoRef}
-        src={ballUpVideo}
+                src={isMobile ? ballUpMobileVideo : ballUpVideo}
         muted
         playsInline
         autoPlay
