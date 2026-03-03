@@ -31,10 +31,6 @@ export default function InputBox({
       onSubmit(trimmed);
     }
   }
-    useEffect(() => {
-    // Initial focus (works on many Android browsers; iOS may require user gesture)
-    inputRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     if (resultFlash !== "wrong") return;

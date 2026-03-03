@@ -208,8 +208,31 @@ useEffect(() => {
 
   if (!question) return null;
 
-    return (
-    <div style={wrap(isMobile)}>
+      return (
+    <div
+      style={wrap(isMobile)}
+      onPointerDownCapture={(e) => {
+        if (!isMobile) return;
+
+        const t = e.target;
+
+        // If tap is on interactive elements, do nothing.
+        if (
+          t instanceof Element &&
+          t.closest('input, button, [role="button"], a, textarea, select, [data-no-refocus="true"]')
+        ) {
+          return;
+        }
+
+        const inputEl = document.querySelector('input[name="not-a-name"]');
+        if (!inputEl) return;
+
+        // If already focused, do nothing.
+        if (document.activeElement === inputEl) return;
+
+        inputEl.focus?.();
+      }}
+    >
       {/* BOTTOM-LEFT SCOREBOARD */}
 <BattleScoreboard
   me={me}

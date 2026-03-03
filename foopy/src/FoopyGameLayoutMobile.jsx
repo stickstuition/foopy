@@ -40,8 +40,31 @@ export default function FoopyGameLayoutMobile({
 }) {
   if (!question) return null;
 
-  return (
-    <div style={wrap}>
+    return (
+    <div
+      style={wrap}
+      onPointerDownCapture={(e) => {
+        // Mobile-only: tap empty space to re-focus input WITHOUT breaking normal taps.
+        // Do not interfere with taps on buttons/input/autocomplete.
+        const t = e.target;
+
+        // If tap is on interactive elements, do nothing.
+        if (
+          t instanceof Element &&
+          t.closest('input, button, [role="button"], a, textarea, select, [data-no-refocus="true"]')
+        ) {
+          return;
+        }
+
+        const inputEl = document.querySelector('input[name="not-a-name"]');
+        if (!inputEl) return;
+
+        // If already focused, do nothing.
+        if (document.activeElement === inputEl) return;
+
+        inputEl.focus?.();
+      }}
+    >
       {/* Scoreboard stays visible */}
       <BattleScoreboard
         me="host"

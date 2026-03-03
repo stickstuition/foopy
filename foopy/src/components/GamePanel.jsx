@@ -27,6 +27,29 @@ export default function GamePanel({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+    useEffect(() => {
+    if (!isMobile) return;
+
+    const setVh = () => {
+      const vv = window.visualViewport;
+      const h = vv?.height ?? window.innerHeight;
+      const vh = h * 0.01;
+      document.documentElement.style.setProperty("--app-vh", `${vh}px`);
+    };
+
+    setVh();
+
+    window.addEventListener("resize", setVh);
+    window.visualViewport?.addEventListener("resize", setVh);
+    window.visualViewport?.addEventListener("scroll", setVh);
+
+    return () => {
+      window.removeEventListener("resize", setVh);
+      window.visualViewport?.removeEventListener("resize", setVh);
+      window.visualViewport?.removeEventListener("scroll", setVh);
+    };
+  }, [isMobile]);
+
   return (
     <div
       id="game-panel-root"
@@ -110,8 +133,11 @@ const panelWrap = {
 const mobilePanelOverride = {
   width: "100vw",
   maxWidth: "100vw",
-  height: "100svh",
-  maxHeight: "100svh",
+
+  // ✅ iOS keyboard-safe: follow visual viewport height
+  height: "calc(var(--app-vh, 1vh) * 100)",
+  maxHeight: "calc(var(--app-vh, 1vh) * 100)",
+
   borderRadius: 0,
   boxShadow: "none"
 };
@@ -149,10 +175,6 @@ const contentLayer = (isMobile, mode) => ({
   position: "relative",
   zIndex: 1,
 
-  // ✅ Mobile: allow scroll only where it’s needed; Menu must be locked
-  ...(isMobile
-    ? mode === "menu"
-      ? { overflow: "hidden" }
-      : { overflowY: "auto", WebkitOverflowScrolling: "touch" }
-    : { overflow: "hidden" }) // ✅ Desktop never scrolls in game pages
+  // ✅ Mobile: outer panel must NOT be the scroller (iOS keyboard bug source)
+  overflow: "hidden"
 });
