@@ -2,9 +2,18 @@
 import { BADGES } from "../engine/badges";
 import useIsMobile from "../hooks/useIsMobile";
 
+export default function BattleScoreboard({
+  me,
+  scores,
+  profiles,
+  singlePlayer,
+  delta,
 
-export default function BattleScoreboard({ me, scores, profiles, singlePlayer, delta }) {
-    const isMobile = useIsMobile(768);
+  // ✅ NEW (Option B)
+  inline = false,
+  compact = false
+}) {
+  const isMobile = useIsMobile(768);
   const opponentRole = me === "host" ? "guest" : "host";
 
   const myProfile = profiles?.[me] ?? null;
@@ -18,22 +27,40 @@ export default function BattleScoreboard({ me, scores, profiles, singlePlayer, d
 
   const showOpponentRow = !singlePlayer && !!oppProfile;
 
+  // ✅ Desktop behaviour remains default unless inline=true is passed
+  const useInline = inline || (compact && isMobile);
+
   return (
-    <div style={wrap(isMobile)}>
+    <div style={useInline ? wrapInline : wrapAbs(isMobile)}>
       <Row
         label={myName}
         score={scores?.[me] ?? 0}
         badgeIcon={myBadgeIcon}
         emphasis
         delta={delta}
+        compact={compact}
       />
 
-      {showOpponentRow && (
+      {showOpponentRow && !compact && (
         <Row
           label={oppName}
           score={scores?.[opponentRole] ?? 0}
           badgeIcon={oppBadgeIcon}
+          compact={compact}
         />
+      )}
+
+      {/* ✅ Compact mode shows opponent on same line */}
+      {showOpponentRow && compact && (
+        <div style={compactVsRow}>
+          <span style={compactVs}>vs</span>
+          <Row
+            label={oppName}
+            score={scores?.[opponentRole] ?? 0}
+            badgeIcon={oppBadgeIcon}
+            compact={compact}
+          />
+        </div>
       )}
     </div>
   );
@@ -49,33 +76,34 @@ function getBadgeIcon(profile) {
   return badge?.icon ?? null;
 }
 
-function Row({ label, score, badgeIcon, emphasis, delta = null }) {
+function Row({ label, score, badgeIcon, emphasis, delta = null, compact }) {
   return (
-    <div style={{ ...row, ...(emphasis ? rowTop : null) }}>
+    <div style={{ ...rowBase, ...(compact ? rowCompact : rowNormal), ...(emphasis ? rowTop : null) }}>
       {badgeIcon ? (
-        <img src={badgeIcon} alt="" style={badgeImg} />
+        <img src={badgeIcon} alt="" style={compact ? badgeImgCompact : badgeImg} />
       ) : (
-        <div style={badgeFallback} />
+        <div style={compact ? badgeFallbackCompact : badgeFallback} />
       )}
 
-      <div style={name}>{label}</div>
+      <div style={compact ? nameCompact : name}>{label}</div>
+
       <div style={scoreWrap}>
-  <div style={scorePill}>{score}</div>
+        <div style={compact ? scorePillCompact : scorePill}>{score}</div>
 
-  {delta != null && (
-    <div style={scoreDelta}>
-      +{delta}
-    </div>
-  )}
-</div>
-
+        {delta != null && !compact && (
+          <div style={scoreDelta}>
+            +{delta}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 /* ---------- styles ---------- */
 
-const wrap = (isMobile) => ({
+// ✅ ORIGINAL absolute wrapper (unchanged behaviour)
+const wrapAbs = (isMobile) => ({
   position: "absolute",
   left: isMobile ? "50%" : 24,
   bottom: isMobile ? "auto" : 24,
@@ -85,20 +113,40 @@ const wrap = (isMobile) => ({
   maxWidth: 360,
   zIndex: 20,
 
-  // ✅ Mobile-only: scoreboard is display-only; never eat taps
+  // Mobile-only: display-only; never eat taps
   pointerEvents: isMobile ? "none" : "auto"
 });
 
+// ✅ NEW inline wrapper (for top bars, etc.)
+const wrapInline = {
+  position: "static",
+  transform: "none",
+  width: "auto",
+  maxWidth: "none",
+  zIndex: 1,
+  pointerEvents: "none", // never block input taps
+  display: "flex",
+  alignItems: "center",
+  gap: 8
+};
 
-const row = {
+const rowBase = {
   display: "flex",
   alignItems: "center",
   gap: 10,
   background: "rgba(255,255,255,0.92)",
   borderRadius: 14,
+  boxShadow: "0 10px 24px rgba(0,0,0,0.12)"
+};
+
+const rowNormal = {
   padding: "10px 12px",
-  boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
   marginBottom: 10
+};
+
+const rowCompact = {
+  padding: "8px 10px",
+  marginBottom: 0
 };
 
 const rowTop = {
@@ -119,6 +167,20 @@ const badgeFallback = {
   background: "#bbb"
 };
 
+const badgeImgCompact = {
+  width: 22,
+  height: 22,
+  borderRadius: 999,
+  objectFit: "cover"
+};
+
+const badgeFallbackCompact = {
+  width: 22,
+  height: 22,
+  borderRadius: 999,
+  background: "#bbb"
+};
+
 const name = {
   flex: 1,
   fontWeight: 800,
@@ -127,6 +189,19 @@ const name = {
   overflow: "hidden",
   whiteSpace: "nowrap",
   textOverflow: "ellipsis"
+};
+
+const nameCompact = {
+  ...name,
+  fontSize: 12,
+  maxWidth: 120
+};
+
+const scoreWrap = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  position: "relative"
 };
 
 const scorePill = {
@@ -140,11 +215,12 @@ const scorePill = {
   color: "#fff",
   fontWeight: 900
 };
-const scoreWrap = {
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  position: "relative"
+
+const scorePillCompact = {
+  ...scorePill,
+  height: 24,
+  minWidth: 30,
+  fontSize: 12
 };
 
 const scoreDelta = {
@@ -152,4 +228,16 @@ const scoreDelta = {
   fontWeight: 900,
   color: "#2ecc71",
   animation: "scorePop 0.7s ease forwards"
+};
+
+const compactVsRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8
+};
+
+const compactVs = {
+  fontWeight: 900,
+  fontSize: 12,
+  opacity: 0.6
 };

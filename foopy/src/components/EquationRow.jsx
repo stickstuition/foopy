@@ -112,8 +112,12 @@ export default function EquationRow({
     display: "flex",
     alignItems: "flex-start", // ✅ top-align columns so the badge card doesn't drop
     gap,
-    transform: `scale(${scale})`,
-    transformOrigin: "top center"
+    ...(isMobile
+  ? {}
+  : {
+      transform: `scale(${scale})`,
+      transformOrigin: "top center"
+    }),
   }}
 >
         {safePlayers.map((p, index) => (

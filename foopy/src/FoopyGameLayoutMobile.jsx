@@ -1,81 +1,48 @@
-import BattleScoreboard from "./components/BattleScoreboard";
 import EquationRow from "./components/EquationRow";
 import InputBox from "./components/InputBox";
-import TimerCircle from "./components/TimerCircle";
-
-/*
-  Mobile-only layout for Timed Mode (FoopyGame)
-
-  Responsibilities:
-  - Arrange existing components in a mobile-safe vertical flow
-  - Keep scoreboard visible
-  - Preserve horizontal EquationRow
-  - Prioritise keyboard-first input
-  - No game logic, no state mutations
-*/
+import MobileTopBar from "./components/MobileTopBar";
+import useIsMobile from "./hooks/useIsMobile";
+import useKeyboardOffset from "./hooks/useKeyboardOffset";
 
 export default function FoopyGameLayoutMobile({
-  // core game data
   user,
   score,
   lastPoints,
   profiles,
-
-  // question + rendering
   question,
   answerTeam,
   mods,
   status,
-
-  // input
   input,
   setInput,
   suggestions,
   submitGuess,
   skipQuestion,
   skipLocked,
-
-  // timer
   time
 }) {
+  const isMobile = useIsMobile(480);
+  const kb = useKeyboardOffset(isMobile);
+
   if (!question) return null;
 
-    return (
-    <div
-      style={wrap}
-      onPointerDownCapture={(e) => {
-        // Mobile-only: tap empty space to re-focus input WITHOUT breaking normal taps.
-        // Do not interfere with taps on buttons/input/autocomplete.
-        const t = e.target;
+  const meProfile = profiles?.host;
+  const meLabel = meProfile?.username ?? "You";
 
-        // If tap is on interactive elements, do nothing.
-        if (
-          t instanceof Element &&
-          t.closest('input, button, [role="button"], a, textarea, select, [data-no-refocus="true"]')
-        ) {
-          return;
-        }
-
-        const inputEl = document.querySelector('input[name="not-a-name"]');
-        if (!inputEl) return;
-
-        // If already focused, do nothing.
-        if (document.activeElement === inputEl) return;
-
-        inputEl.focus?.();
-      }}
-    >
-      {/* Scoreboard stays visible */}
-      <BattleScoreboard
-        me="host"
-        scores={{ host: score, guest: 0 }}
-        profiles={profiles}
+  return (
+    <div style={wrap}>
+      {/* TOP BAR (mobile-only) */}
+      <MobileTopBar
         singlePlayer
+        meLabel={meLabel}
+        myScore={score}
+        myBadgeId={meProfile?.badgeEquipped ?? null}
+        time={time}
         delta={lastPoints}
       />
 
-      {/* Equation */}
-      <div style={equationWrap}>
+      {/* STAGE */}
+      <div style={stage}>
         <EquationRow
           players={question.players}
           operator={question.operator}
@@ -85,19 +52,19 @@ export default function FoopyGameLayoutMobile({
         />
       </div>
 
-      {/* Input zone */}
-      <div style={inputWrap}>
+      {/* BOTTOM DOCK */}
+      <div
+        style={{
+          ...dock,
+          transform: kb ? `translateY(-${kb}px)` : "translateY(0)"
+        }}
+      >
         <InputBox
           value={input}
           onChange={setInput}
           onSubmit={() => {
             if (skipLocked) return;
-
-            const guess =
-              suggestions.length > 0
-                ? suggestions[0].name
-                : input;
-
+            const guess = suggestions.length > 0 ? suggestions[0].name : input;
             submitGuess(guess);
           }}
           suggestions={suggestions}
@@ -110,40 +77,36 @@ export default function FoopyGameLayoutMobile({
           resultFlash={status}
         />
       </div>
-
-      {/* Timer */}
-      <TimerCircle time={time} />
     </div>
   );
 }
 
-/* ---------- styles ---------- */
-
 const wrap = {
   width: "100%",
   height: "100%",
+  position: "relative",
+  overflow: "hidden",
   display: "flex",
   flexDirection: "column",
-  alignItems: "center",
-  paddingTop: 110,   // shifted down properly under HUD
-  boxSizing: "border-box",
-  position: "relative"
+  paddingTop: 78, // clears HUD + our top bar
+  boxSizing: "border-box"
 };
 
-const equationWrap = {
+const stage = {
+  flex: 1,
   width: "100%",
   display: "flex",
   justifyContent: "center",
-  marginTop: 12,
-  marginBottom: 8
+  alignItems: "flex-start",
+  overflow: "hidden",
+  paddingTop: 10
 };
 
-const inputWrap = {
+const dock = {
   width: "100%",
-  display: "flex",
-  justifyContent: "center",
-  marginTop: "auto",
-  paddingBottom: "max(16px, env(safe-area-inset-bottom))",
-  position: "sticky",
-  bottom: 0
+  padding: "10px 0 max(14px, env(safe-area-inset-bottom))",
+  background: "rgba(255,255,255,0.92)",
+  borderTop: "1px solid rgba(0,0,0,0.08)",
+  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
+  zIndex: 40
 };

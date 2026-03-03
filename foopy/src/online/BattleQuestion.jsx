@@ -233,12 +233,21 @@ useEffect(() => {
         inputEl.focus?.();
       }}
     >
-      {/* BOTTOM-LEFT SCOREBOARD */}
-<BattleScoreboard
-  me={me}
-  scores={scores}
-  profiles={profiles}
-/>
+      {/* TOP BAR (MOBILE ONLY) */}
+{isMobile ? (
+  <div style={topBar}>
+    <BattleScoreboard
+      me={me}
+      scores={scores}
+      profiles={profiles}
+      inline
+      compact
+    />
+    <TimerCircle time={time} />
+  </div>
+) : (
+  <BattleScoreboard me={me} scores={scores} profiles={profiles} />
+)}
 
 
       {/* MAIN GAME AREA */}
@@ -261,40 +270,44 @@ useEffect(() => {
           answerPlayer={answerPlayer}
         />
 
-        <InputBox
-  value={input}
-  onChange={setInput}
-  onSubmit={submitGuess}
-  suggestions={suggestions}
-  disabled={inputLocked}
-  onSelectSuggestion={(p) => {
-    const name = typeof p === "string" ? p : p?.name;
-    if (name) submitGuess(name);
-  }}
-/>
+        <div style={{ marginTop: "auto", width: "100%" }}>
+  <InputBox
+    value={input}
+    onChange={setInput}
+    onSubmit={submitGuess}
+    suggestions={suggestions}
+    disabled={inputLocked}
+    onSelectSuggestion={(p) => {
+      const name = typeof p === "string" ? p : p?.name;
+      if (name) submitGuess(name);
+    }}
+  />
+</div>
 
 
-        <TimerCircle time={time} />
+        {!isMobile && <TimerCircle time={time} />}
       </div>
 
-      {/* FEED */}
-            <div style={feedWrap(isMobile)}>
-        {feed.map((f) => (
-          <div
-            key={f.id}
-            style={{
-              ...feedItem,
-              color: f.correct ? "#2ecc71" : "#e74c3c",
-              animation: f.fading
-                ? "fadeOutFeed 0.5s ease forwards"
-                : "none"
-            }}
-          >
-            <strong>{f.player === me ? "You" : "Opponent"}</strong>{" "}
-            guessed {f.guess} {f.correct ? "✓" : "✕"}
-          </div>
-        ))}
+      {/* FEED (DESKTOP ONLY) */}
+{!isMobile && (
+  <div style={feedWrap(isMobile)}>
+    {feed.map((f) => (
+      <div
+        key={f.id}
+        style={{
+          ...feedItem,
+          color: f.correct ? "#2ecc71" : "#e74c3c",
+          animation: f.fading
+            ? "fadeOutFeed 0.5s ease forwards"
+            : "none"
+        }}
+      >
+        <strong>{f.player === me ? "You" : "Opponent"}</strong>{" "}
+        guessed {f.guess} {f.correct ? "✓" : "✕"}
       </div>
+    ))}
+  </div>
+)}
     </div>
   );
 }
@@ -311,7 +324,7 @@ const wrap = (mobile) => ({
   alignItems: "center",
   justifyContent: mobile ? "flex-start" : "center",
   overflow: mobile ? "visible" : "hidden",
-  paddingTop: mobile ? 110 : 0, // clears HUD + scoreboard
+  paddingTop: 0,
   boxSizing: "border-box"
 });
 
@@ -324,6 +337,7 @@ const gameArea = (mobile) => ({
   flexDirection: "column",
   alignItems: "center",
   gap: mobile ? 10 : 0,
+  minHeight: mobile ? "100%" : undefined,
   flex: mobile ? 1 : undefined,
   justifyContent: mobile ? "flex-start" : undefined,
   paddingBottom: mobile
@@ -349,4 +363,62 @@ const feedItem = {
   fontSize: 14,
   marginBottom: 8,
   fontWeight: 700
+};
+
+const topBar = {
+  width: "100%",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  padding: "12px 12px",
+  boxSizing: "border-box",
+};
+
+const topScoreBar = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  minWidth: 0,
+  flex: 1,
+};
+
+const topPill = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  background: "rgba(255,255,255,0.92)",
+  borderRadius: 999,
+  padding: "8px 10px",
+  boxShadow: "0 8px 18px rgba(0,0,0,0.12)",
+  minWidth: 0,
+  flex: 1,
+};
+
+const topName = {
+  fontWeight: 900,
+  fontSize: 12,
+  color: "#111",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  minWidth: 0,
+};
+
+const topScore = {
+  fontWeight: 900,
+  fontSize: 14,
+  background: "#111",
+  color: "#fff",
+  borderRadius: 999,
+  padding: "4px 10px",
+  flexShrink: 0,
+};
+
+const topVs = {
+  fontWeight: 900,
+  fontSize: 12,
+  opacity: 0.6,
+  flexShrink: 0,
 };
