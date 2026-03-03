@@ -156,10 +156,6 @@ export default function BadgeShopTab() {
         })}
       </div>
 
-      <div style={footnote}>
-        Favourite team is granted free at account creation.
-        All other team badges cost coins.
-      </div>
     </div>
   );
 }
