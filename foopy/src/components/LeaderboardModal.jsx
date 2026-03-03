@@ -180,7 +180,13 @@ function Pill({ variant, active, children, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      style={{ ...base, ...(active ? activeStyle : {}) }}
+      style={{
+        ...base,
+        ...(active ? activeStyle : {}),
+        flex: "0 0 auto",
+        flexShrink: 0,
+        whiteSpace: "nowrap"
+      }}
     >
       {children}
     </button>
@@ -235,19 +241,23 @@ const filterRow = (mobile) => ({
 const metricGroup = (mobile) => ({
   display: "flex",
   gap: 8,
+  width: "100%",
   overflowX: mobile ? "auto" : "visible",
+  overflowY: "hidden",
   WebkitOverflowScrolling: "touch",
-  whiteSpace: "nowrap",
-  paddingBottom: mobile ? 2 : 0
+  touchAction: mobile ? "pan-x" : undefined,
+  paddingBottom: mobile ? 4 : 0
 });
 
 const periodGroup = (mobile) => ({
   display: "flex",
   gap: 10,
+  width: "100%",
   overflowX: mobile ? "auto" : "visible",
+  overflowY: "hidden",
   WebkitOverflowScrolling: "touch",
-  whiteSpace: "nowrap",
-  paddingBottom: mobile ? 2 : 0
+  touchAction: mobile ? "pan-x" : undefined,
+  paddingBottom: mobile ? 4 : 0
 });
 
 const metricTab = {
