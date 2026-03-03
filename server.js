@@ -1105,7 +1105,7 @@ app.get("/leaderboard", async (req, res) => {
         valueExpr = `
           SUM(
             CASE
-              WHEN g.mode = 'online' AND g.did_win = TRUE THEN 1
+              WHEN g.mode = 'online' AND COALESCE(g.did_win::int, 0) = 1 THEN 1
               ELSE 0
             END
           )
