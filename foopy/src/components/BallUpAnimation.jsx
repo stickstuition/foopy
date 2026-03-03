@@ -25,7 +25,7 @@ const videoStyle = {
 /* ---------- component ---------- */
 
 export default function BallUpAnimation({ onComplete }) {
-    const isMobile = useIsMobile(480);
+    const isMobile = useIsMobile(768);
   const videoRef = useRef(null);
   const [fadingOut, setFadingOut] = useState(false);
 

@@ -88,13 +88,16 @@ export default function EquationRow({
     <div
       ref={outerRef}
       style={{
-        width: "100%",
-        overflow: "hidden",
-        display: "flex",
-        justifyContent: "center",
-                paddingTop: isMobile ? 14 : 34,
-        marginBottom: isMobile ? 16 : 12
-      }}
+  width: "100%",
+  overflow: "hidden",
+  display: "flex",
+  justifyContent: "center",
+  paddingTop: isMobile ? 14 : 34,
+  marginBottom: isMobile ? 16 : 12,
+
+  // ✅ Mobile-only: ensure row can never block taps on input below
+  pointerEvents: isMobile ? "none" : "auto"
+}}
     >
             <div
         style={{

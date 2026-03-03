@@ -72,15 +72,21 @@ export default function InputBox({
         inputRef.current?.focus();
       }}
       style={{
-        width: "100%",
-        maxWidth: 360,
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        position: "relative",
-        paddingLeft: isMobile ? 12 : 0,
-        paddingRight: isMobile ? 12 : 0
-      }}
+  width: "100%",
+  maxWidth: 360,
+  margin: "0 auto",
+  display: "flex",
+  flexDirection: "column",
+  position: "relative",
+
+  // ✅ Ensure input layer stays tappable above layout overlays
+  zIndex: isMobile ? 50 : "auto",
+  pointerEvents: "auto",
+  touchAction: "manipulation",
+
+  paddingLeft: isMobile ? 12 : 0,
+  paddingRight: isMobile ? 12 : 0
+}}
     >
 <input
   ref={inputRef}
@@ -94,10 +100,10 @@ export default function InputBox({
     submitFromInput();
   }}
     onBlur={() => {
-    if (!isMobile) return;
-    // If anything causes blur, immediately restore focus
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }}
+  if (!isMobile) return;
+  // If anything causes blur, immediately restore focus
+  requestAnimationFrame(() => inputRef.current?.focus());
+}}
   autoComplete="off"
   autoCorrect="off"
   autoCapitalize="off"

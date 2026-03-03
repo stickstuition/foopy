@@ -83,7 +83,10 @@ const wrap = (isMobile) => ({
   transform: isMobile ? "translateX(-50%)" : "none",
   width: isMobile ? "calc(100% - 24px)" : 220,
   maxWidth: 360,
-  zIndex: 20
+  zIndex: 20,
+
+  // ✅ Mobile-only: scoreboard is display-only; never eat taps
+  pointerEvents: isMobile ? "none" : "auto"
 });
 
 

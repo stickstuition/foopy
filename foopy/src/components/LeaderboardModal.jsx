@@ -82,8 +82,8 @@ useEffect(() => {
     .join(" ");
 
   return createPortal(
-    <div style={backdrop} onMouseDown={onClose}>
-            <div style={modal(isMobile)} onMouseDown={e => e.stopPropagation()}>
+  <div style={backdrop(isMobile)} onMouseDown={onClose}>
+    <div style={modal(isMobile)} onMouseDown={e => e.stopPropagation()}>
         {/* ---------- HEADER ---------- */}
         <div style={header}>
           <div style={title}>LEADERBOARD</div>
@@ -195,15 +195,18 @@ function Pill({ variant, active, children, onClick }) {
 
 /* ---------- STYLES ---------- */
 
-const backdrop = {
+const backdrop = (mobile) => ({
   position: "fixed",
   inset: 0,
   background: "rgba(0,0,0,0.38)",
   display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
+
+  // ✅ Mobile: full-screen modal must start at top; no vertical centering
+  alignItems: mobile ? "stretch" : "center",
+  justifyContent: mobile ? "stretch" : "center",
+
   zIndex: 9999
-};
+});
 
 const modal = (mobile) => ({
   width: mobile ? "min(980px, 100vw)" : "min(900px, 96vw)",
@@ -294,7 +297,9 @@ const periodTabActive = {
 
 const body = (mobile) => ({
   padding: mobile ? 12 : 18,
-  overflowY: "auto"
+
+  // ✅ Desktop: no internal scrolling (regression fix)
+  overflowY: mobile ? "auto" : "hidden"
 });
 const note = { opacity: 0.6 };
 

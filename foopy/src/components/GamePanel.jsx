@@ -56,7 +56,7 @@ export default function GamePanel({
         </div>
       )}
 
-      <div style={contentLayer(isMobile)}>{children}</div>
+      <div style={contentLayer(isMobile, mode)}>{children}</div>
     </div>
   );
 }
@@ -143,14 +143,16 @@ const hudButton = {
   `
 };
 
-const contentLayer = (isMobile) => ({
+const contentLayer = (isMobile, mode) => ({
   width: "100%",
   height: "100%",
   position: "relative",
   zIndex: 1,
 
-  // ✅ Mobile can scroll if needed
+  // ✅ Mobile: allow scroll only where it’s needed; Menu must be locked
   ...(isMobile
-    ? { overflowY: "auto", WebkitOverflowScrolling: "touch" }
+    ? mode === "menu"
+      ? { overflow: "hidden" }
+      : { overflowY: "auto", WebkitOverflowScrolling: "touch" }
     : { overflow: "hidden" }) // ✅ Desktop never scrolls in game pages
 });

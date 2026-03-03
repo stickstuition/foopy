@@ -213,7 +213,10 @@ const mobileWrap = {
   overflow: "hidden",
   display: "flex",
   justifyContent: "center",
-  alignItems: "center"
+  alignItems: "center",
+  // ✅ Mobile: stable centering without “droop”
+  paddingTop: 0,
+  boxSizing: "border-box"
 };
 
 const content = (mobile) => ({
@@ -340,11 +343,17 @@ const profileTooltipCoins = {
 const logoCloudWrap = (mobile) => ({
   position: "absolute",
   inset: 0,
-  padding: mobile ? 28 : 80,
+
+  // ✅ Mobile: smaller cloud so it doesn’t force perceived vertical space
+  padding: mobile ? 14 : 80,
+
   display: "grid",
   gridTemplateColumns: mobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)",
-  gap: mobile ? 18 : 32,
-  opacity: mobile ? 0.05 : 0.06,
+  gap: mobile ? 12 : 32,
+
+  // ✅ Mobile: slightly lighter to avoid “big blob” feel
+  opacity: mobile ? 0.04 : 0.06,
+
   pointerEvents: "none",
   zIndex: 0
 });
