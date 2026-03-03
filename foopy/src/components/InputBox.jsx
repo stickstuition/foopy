@@ -66,11 +66,6 @@ export default function InputBox({
 
   return (
         <div
-      onPointerDown={() => {
-        if (!isMobile) return;
-        // User gesture focus => re-opens keyboard on iOS
-        inputRef.current?.focus();
-      }}
       style={{
   width: "100%",
   maxWidth: 360,
@@ -99,11 +94,6 @@ export default function InputBox({
     e.preventDefault();
     submitFromInput();
   }}
-    onBlur={() => {
-  if (!isMobile) return;
-  // If anything causes blur, immediately restore focus
-  requestAnimationFrame(() => inputRef.current?.focus());
-}}
   autoComplete="off"
   autoCorrect="off"
   autoCapitalize="off"

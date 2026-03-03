@@ -287,9 +287,8 @@ const wrap = (mobile) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: mobile ? "flex-start" : "center",
-  overflow: "hidden",
-  // Mobile: keep content below the scoreboard (which is absolute top)
-  paddingTop: mobile ? 78 : 0,
+  overflow: mobile ? "visible" : "hidden",
+  paddingTop: mobile ? 110 : 0, // clears HUD + scoreboard
   boxSizing: "border-box"
 });
 
@@ -302,15 +301,17 @@ const gameArea = (mobile) => ({
   flexDirection: "column",
   alignItems: "center",
   gap: mobile ? 10 : 0,
-  // Mobile: allow input to sit comfortably without being pushed off-screen
   flex: mobile ? 1 : undefined,
-  justifyContent: mobile ? "flex-start" : undefined
+  justifyContent: mobile ? "flex-start" : undefined,
+  paddingBottom: mobile
+    ? "max(16px, env(safe-area-inset-bottom))"
+    : undefined
 });
 
 const feedWrap = (mobile) => ({
   position: "absolute",
   right: mobile ? 12 : 2,
-  top: mobile ? 86 : "auto",
+  top: mobile ? 96 : "auto",
   bottom: mobile ? "auto" : 100,
   width: mobile ? "calc(100% - 24px)" : 260,
   maxWidth: mobile ? 420 : undefined,

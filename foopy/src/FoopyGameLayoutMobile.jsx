@@ -102,8 +102,9 @@ const wrap = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  paddingTop: 72, // clears HUD + timer
-  boxSizing: "border-box"
+  paddingTop: 110,   // shifted down properly under HUD
+  boxSizing: "border-box",
+  position: "relative"
 };
 
 const equationWrap = {
@@ -119,5 +120,7 @@ const inputWrap = {
   display: "flex",
   justifyContent: "center",
   marginTop: "auto",
-  paddingBottom: 16
+  paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+  position: "sticky",
+  bottom: 0
 };
