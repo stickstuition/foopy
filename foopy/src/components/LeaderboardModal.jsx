@@ -236,30 +236,47 @@ const filterRow = (mobile) => ({
   flexDirection: mobile ? "column" : "row",
   justifyContent: "space-between",
   alignItems: mobile ? "stretch" : "center",
-  gap: mobile ? 10 : 0,
+  gap: mobile ? 10 : 12,
   padding: mobile ? "10px 12px" : "12px 18px",
-  borderBottom: "1px solid rgba(0,0,0,0.08)"
+  borderBottom: "1px solid rgba(0,0,0,0.08)",
+
+  // ✅ Desktop: avoid accidental horizontal scroll
+  overflowX: "hidden"
 });
 
 const metricGroup = (mobile) => ({
   display: "flex",
   gap: 8,
-  width: "100%",
+
+  // ✅ Desktop: take only needed width so it can sit left
+  width: mobile ? "100%" : "auto",
+
+  // ✅ Desktop: do not create horizontal scrolling row
   overflowX: mobile ? "auto" : "visible",
   overflowY: "hidden",
+
   WebkitOverflowScrolling: "touch",
   touchAction: mobile ? "pan-x" : undefined,
+
   paddingBottom: mobile ? 4 : 0
 });
 
 const periodGroup = (mobile) => ({
   display: "flex",
   gap: 10,
-  width: "100%",
+
+  // ✅ Desktop: take only needed width so it can sit right
+  width: mobile ? "100%" : "auto",
+
   overflowX: mobile ? "auto" : "visible",
   overflowY: "hidden",
+
   WebkitOverflowScrolling: "touch",
   touchAction: mobile ? "pan-x" : undefined,
+
+  // ✅ Desktop: push to the right
+  marginLeft: mobile ? 0 : "auto",
+
   paddingBottom: mobile ? 4 : 0
 });
 
