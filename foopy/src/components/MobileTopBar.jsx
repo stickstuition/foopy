@@ -62,7 +62,7 @@ export default function MobileTopBar({
 /* styles */
 const bar = {
   position: "absolute",
-  top: 10,
+  top: 64,
   left: 10,
   right: 10,
   zIndex: 30,
@@ -70,9 +70,8 @@ const bar = {
   alignItems: "center",
   justifyContent: "space-between",
   gap: 10,
-  pointerEvents: "none" // never steals taps
+  pointerEvents: "none"
 };
-
 const left = {
   display: "flex",
   gap: 10,

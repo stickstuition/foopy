@@ -83,7 +83,7 @@ export default function EquationRow({
 
   // Height of the "card row" (cards + operators + equals + badge)
   // Used to align "=" with the players row (not the names/numbers).
-    const cardRowHeight = isMobile ? 132 : 192;
+    const cardRowHeight = isMobile ? 120 : 192;
   return (
     <div
       ref={outerRef}
@@ -92,10 +92,8 @@ export default function EquationRow({
   overflow: "hidden",
   display: "flex",
   justifyContent: "center",
-  paddingTop: isMobile ? 14 : 34,
-  marginBottom: isMobile ? 16 : 12,
-
-  // ✅ Mobile-only: ensure row can never block taps on input below
+  paddingTop: isMobile ? 6 : 34,
+  marginBottom: isMobile ? 8 : 12,
   pointerEvents: isMobile ? "none" : "auto"
 }}
     >

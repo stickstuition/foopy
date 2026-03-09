@@ -95,6 +95,7 @@ export default function InputBox({
   autoCapitalize="off"
   spellCheck={false}
   inputMode="text"
+    enterKeyHint="done"
   name="not-a-name"
   aria-autocomplete="none"
   style={{
@@ -116,8 +117,9 @@ export default function InputBox({
           style={{
             position: "absolute",
             top: 52,
-            left: 0,
-            width: "100%",
+            left: 12,
+            right: 12,
+            width: "auto",
             zIndex: 20
           }}
         >

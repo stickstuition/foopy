@@ -86,23 +86,27 @@ const wrap = {
   height: "100%",
   position: "relative",
   overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-  paddingTop: 78, // clears HUD + our top bar
   boxSizing: "border-box"
 };
 
 const stage = {
-  flex: 1,
-  width: "100%",
+  position: "absolute",
+  top: 86,
+  left: 0,
+  right: 0,
+  bottom: 112,
   display: "flex",
   justifyContent: "center",
   alignItems: "flex-start",
   overflow: "hidden",
-  paddingTop: 10
+  paddingTop: 6
 };
 
 const dock = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 0,
   width: "100%",
   padding: "10px 0 max(14px, env(safe-area-inset-bottom))",
   background: "rgba(255,255,255,0.92)",

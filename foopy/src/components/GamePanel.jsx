@@ -31,8 +31,7 @@ export default function GamePanel({
     if (!isMobile) return;
 
     const setVh = () => {
-      const vv = window.visualViewport;
-      const h = vv?.height ?? window.innerHeight;
+      const h = window.innerHeight;
       const vh = h * 0.01;
       document.documentElement.style.setProperty("--app-vh", `${vh}px`);
     };
@@ -40,13 +39,11 @@ export default function GamePanel({
     setVh();
 
     window.addEventListener("resize", setVh);
-    window.visualViewport?.addEventListener("resize", setVh);
-    window.visualViewport?.addEventListener("scroll", setVh);
+    window.addEventListener("orientationchange", setVh);
 
     return () => {
       window.removeEventListener("resize", setVh);
-      window.visualViewport?.removeEventListener("resize", setVh);
-      window.visualViewport?.removeEventListener("scroll", setVh);
+      window.removeEventListener("orientationchange", setVh);
     };
   }, [isMobile]);
 
