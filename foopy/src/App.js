@@ -16,9 +16,12 @@ import FoopyGame from "./FoopyGame";
 import MainMenu from "./components/MainMenu";
 import OnlineBattle from "./online/OnlineBattle";
 import ConfirmModal from "./components/ConfirmModal";
+import useIsMobile from "./hooks/useIsMobile";
 
 function App() {
   const { user, loading, logout } = useAuth();
+    const isMobile = useIsMobile(480);
+
 
   /* ---------- Global sound state ---------- */
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
@@ -181,8 +184,8 @@ function App() {
 
   /* ---------- Render ---------- */
 
-  return (
-    <GameShell>
+  const appContent = (
+    <>
       <GamePanel
         mode={mode}
         variant={!user ? "auth" : "default"}
@@ -213,8 +216,10 @@ function App() {
         onCancel={() => setConfirmOpen(false)}
         hideCancel={confirmData.hideCancel}
       />
-    </GameShell>
+    </>
   );
+
+  return isMobile ? appContent : <GameShell>{appContent}</GameShell>;
 }
 
 export default App;
