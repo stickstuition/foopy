@@ -9,7 +9,8 @@ export default function InputBox({
   suggestions,
   onSelectSuggestion,
   onSkip,
-  resultFlash
+  resultFlash,
+  disabled = false
 }) {
   const isMobile = useIsMobile();
   const [skipFlash, setSkipFlash] = useState(false);
@@ -25,6 +26,8 @@ export default function InputBox({
 
   function submitFromInput(raw = value) {
     const trimmed = (raw ?? "").trim();
+    if (disabled) return;
+
     if (!trimmed) {
       setErrorFlash(true);
       setTimeout(() => setErrorFlash(false), 200);
@@ -50,6 +53,8 @@ export default function InputBox({
     if (isMobile) return;
 
     function handleKey(e) {
+      if (disabled) return;
+
       if (e.key === "Control" && onSkip) {
         setSkipFlash(true);
         onSkip();
@@ -88,9 +93,13 @@ export default function InputBox({
 <input
   ref={inputRef}
   value={value}
-  placeholder="Enter player name"
-  onChange={(e) => onChange(e.target.value)}
+  placeholder="Enter player"
+  onChange={(e) => {
+    if (disabled) return;
+    onChange(e.target.value);
+  }}
   onFocus={() => {
+    if (disabled) return;
     if (!isMobile) return;
     lockViewportToTop();
     requestAnimationFrame(() => lockViewportToTop());
@@ -98,6 +107,7 @@ export default function InputBox({
     setTimeout(() => lockViewportToTop(), 300);
   }}
   onTouchStart={() => {
+    if (disabled) return;
     if (!isMobile) return;
     lockViewportToTop();
   }}
@@ -115,6 +125,7 @@ export default function InputBox({
   enterKeyHint="done"
   name="foopy-answer"
   aria-autocomplete="none"
+  disabled={disabled}
   style={{
     width: "100%",
     height: 42,
@@ -124,7 +135,8 @@ export default function InputBox({
     border: errorFlash ? "2px solid #ff6b6b" : "1px solid #ccc",
     outline: "none",
     boxSizing: "border-box",
-    transition: "border 0.15s"
+    transition: "border 0.15s",
+    opacity: disabled ? 0.7 : 1
   }}
 />
 

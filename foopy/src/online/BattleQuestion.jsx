@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { socket } from "../online/socket";
 import useIsMobile from "../hooks/useIsMobile";
+import useKeyboardOffset from "../hooks/useKeyboardOffset";
 import EquationRow from "../components/EquationRow";
 import InputBox from "../components/InputBox";
 import TimerCircle from "../components/TimerCircle";
@@ -17,7 +18,9 @@ export default function BattleQuestion({
   isOnline,
   profiles      // 👈 ADD THIS
 }) {
-    const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(768);
+  const kb = useKeyboardOffset(isMobile);
+  const keyboardOpen = kb > 0;
 
   const [time, setTime] = useState(duration ?? 20);
   const [input, setInput] = useState("");
@@ -211,82 +214,104 @@ useEffect(() => {
       return (
     <div
       style={wrap(isMobile)}
-      onPointerDownCapture={(e) => {
-        if (!isMobile) return;
-
-        const t = e.target;
-
-        // If tap is on interactive elements, do nothing.
-        if (
-          t instanceof Element &&
-          t.closest('input, button, [role="button"], a, textarea, select, [data-no-refocus="true"]')
-        ) {
-          return;
-        }
-
-        const inputEl = document.querySelector('input[name="not-a-name"]');
-        if (!inputEl) return;
-
-        // If already focused, do nothing.
-        if (document.activeElement === inputEl) return;
-
-        inputEl.focus?.();
-      }}
     >
-      {/* TOP BAR (MOBILE ONLY) */}
-{isMobile ? (
-  <div style={topBar}>
-    <BattleScoreboard
-      me={me}
-      scores={scores}
-      profiles={profiles}
-      inline
-      compact
-    />
-    <TimerCircle time={time} />
-  </div>
-) : (
-  <BattleScoreboard me={me} scores={scores} profiles={profiles} />
-)}
-
+      {/* TOP BAR */}
+      {isMobile ? (
+        <div style={topBarMobile}>
+          <BattleScoreboard
+            me={me}
+            scores={scores}
+            profiles={profiles}
+            inline
+            compact
+          />
+          <TimerCircle time={time} />
+        </div>
+      ) : (
+        <BattleScoreboard me={me} scores={scores} profiles={profiles} />
+      )}
 
       {/* MAIN GAME AREA */}
-            <div
-        style={{
-          ...gameArea(isMobile),
-          animation: iWon
-            ? "glowGreen 1.1s ease forwards"
-            : iLost
-            ? "glowRed 1.1s ease forwards"
-            : "none"
-        }}
-      >
-        <EquationRow
-          players={question.players}
-          operator={question.operator}
-          showNumbers
-          showNames
-          teamKey={question.team}
-          answerPlayer={answerPlayer}
-        />
+      {isMobile ? (
+        <>
+          <div
+            style={{
+              ...mobileStage,
+              bottom: keyboardOpen ? kb + 92 : 112,
+              animation: iWon
+                ? "glowGreen 1.1s ease forwards"
+                : iLost
+                ? "glowRed 1.1s ease forwards"
+                : "none"
+            }}
+          >
+            <EquationRow
+              players={question.players}
+              operator={question.operator}
+              showNumbers={!keyboardOpen}
+              showNames={!keyboardOpen}
+              teamKey={question.team}
+              answerPlayer={answerPlayer}
+              compactMobile={keyboardOpen}
+            />
+          </div>
 
-        <div style={{ marginTop: "auto", width: "100%" }}>
-  <InputBox
-    value={input}
-    onChange={setInput}
-    onSubmit={submitGuess}
-    suggestions={suggestions}
-    disabled={inputLocked}
-    onSelectSuggestion={(p) => {
-      const name = typeof p === "string" ? p : p?.name;
-      if (name) submitGuess(name);
-    }}
-  />
-</div>
+          <div
+            style={{
+              ...mobileDock,
+              transform: kb ? `translateY(-${kb}px)` : "translateY(0)"
+            }}
+          >
+            <InputBox
+              value={input}
+              onChange={setInput}
+              onSubmit={submitGuess}
+              suggestions={suggestions}
+              disabled={inputLocked}
+              onSelectSuggestion={(p) => {
+                const name = typeof p === "string" ? p : p?.name;
+                if (name) submitGuess(name);
+              }}
+            />
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            ...gameArea(false),
+            animation: iWon
+              ? "glowGreen 1.1s ease forwards"
+              : iLost
+              ? "glowRed 1.1s ease forwards"
+              : "none"
+          }}
+        >
+          <EquationRow
+            players={question.players}
+            operator={question.operator}
+            showNumbers
+            showNames
+            teamKey={question.team}
+            answerPlayer={answerPlayer}
+          />
 
+          <div style={{ marginTop: "auto", width: "100%" }}>
+            <InputBox
+              value={input}
+              onChange={setInput}
+              onSubmit={submitGuess}
+              suggestions={suggestions}
+              disabled={inputLocked}
+              onSelectSuggestion={(p) => {
+                const name = typeof p === "string" ? p : p?.name;
+                if (name) submitGuess(name);
+              }}
+            />
+          </div>
 
-        {!isMobile && <TimerCircle time={time} />}
-      </div>
+          <TimerCircle time={time} />
+        </div>
+      )}
 
       {/* FEED (DESKTOP ONLY) */}
 {!isMobile && (
@@ -323,7 +348,7 @@ const wrap = (mobile) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: mobile ? "flex-start" : "center",
-  overflow: mobile ? "visible" : "hidden",
+  overflow: "hidden",
   paddingTop: 0,
   boxSizing: "border-box"
 });
@@ -337,8 +362,6 @@ const gameArea = (mobile) => ({
   flexDirection: "column",
   alignItems: "center",
   gap: mobile ? 10 : 0,
-  minHeight: mobile ? "100%" : undefined,
-  flex: mobile ? 1 : undefined,
   justifyContent: mobile ? "flex-start" : undefined,
   paddingBottom: mobile
     ? "max(16px, env(safe-area-inset-bottom))"
@@ -365,14 +388,42 @@ const feedItem = {
   fontWeight: 700
 };
 
-const topBar = {
-  width: "100%",
+const topBarMobile = {
+  position: "absolute",
+  top: 64,
+  left: 10,
+  right: 10,
+  zIndex: 30,
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   gap: 12,
-  padding: "12px 12px",
-  boxSizing: "border-box",
+  boxSizing: "border-box"
+};
+
+const mobileStage = {
+  position: "absolute",
+  top: 104,
+  left: 0,
+  right: 0,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  overflow: "hidden",
+  paddingTop: 0
+};
+
+const mobileDock = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  width: "100%",
+  padding: "8px 0 max(10px, env(safe-area-inset-bottom))",
+  background: "rgba(255,255,255,0.96)",
+  borderTop: "1px solid rgba(0,0,0,0.08)",
+  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
+  zIndex: 60
 };
 
 const topScoreBar = {
