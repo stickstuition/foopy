@@ -27,23 +27,27 @@ export default function GamePanel({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-    useEffect(() => {
+      useEffect(() => {
     if (!isMobile) return;
 
-    const setVh = () => {
+    const setStableVh = () => {
       const h = window.innerHeight;
       const vh = h * 0.01;
       document.documentElement.style.setProperty("--app-vh", `${vh}px`);
     };
 
-    setVh();
+    setStableVh();
 
-    window.addEventListener("resize", setVh);
-    window.addEventListener("orientationchange", setVh);
+    const handleOrientationChange = () => {
+      setTimeout(() => {
+        setStableVh();
+      }, 250);
+    };
+
+    window.addEventListener("orientationchange", handleOrientationChange);
 
     return () => {
-      window.removeEventListener("resize", setVh);
-      window.removeEventListener("orientationchange", setVh);
+      window.removeEventListener("orientationchange", handleOrientationChange);
     };
   }, [isMobile]);
 

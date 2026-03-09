@@ -83,7 +83,7 @@ export default function EquationRow({
 
   // Height of the "card row" (cards + operators + equals + badge)
   // Used to align "=" with the players row (not the names/numbers).
-    const cardRowHeight = isMobile ? 120 : 192;
+    const cardRowHeight = isMobile ? 108 : 192;
   return (
     <div
       ref={outerRef}
@@ -92,8 +92,8 @@ export default function EquationRow({
   overflow: "hidden",
   display: "flex",
   justifyContent: "center",
-  paddingTop: isMobile ? 6 : 34,
-  marginBottom: isMobile ? 8 : 12,
+  paddingTop: isMobile ? 2 : 34,
+  marginBottom: isMobile ? 4 : 12,
   pointerEvents: isMobile ? "none" : "auto"
 }}
     >
@@ -148,7 +148,7 @@ export default function EquationRow({
   <div
     style={{
       fontWeight: 800,
-      fontSize: isMobile ? 14 : 18,
+      fontSize: isMobile ? 12 : 18,
       marginTop: isMobile ? 0 : 12,
       lineHeight: 1.05
     }}
@@ -160,7 +160,7 @@ export default function EquationRow({
                         {showNumbers && getJerseyNumber(p) != null && (
   <div
     style={{
-      fontSize: isMobile ? 12 : 13,
+      fontSize: isMobile ? 11 : 13,
       opacity: 0.85,
       marginTop: isMobile ? 0 : 2,
       lineHeight: 1

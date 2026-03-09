@@ -80,14 +80,14 @@ const left = {
 };
 
 const pill = {
-  height: 44,
-  padding: "0 12px",
+  height: 40,
+  padding: "0 10px",
   borderRadius: 999,
   background: "rgba(255,255,255,0.92)",
   boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
   display: "flex",
   alignItems: "center",
-  gap: 10,
+  gap: 8,
   pointerEvents: "none"
 };
 
@@ -153,15 +153,15 @@ const deltaStyle = {
 };
 
 const timerPill = {
-  width: 54,
-  height: 54,
+  width: 50,
+  height: 50,
   borderRadius: 999,
   background: "#111",
   color: "#fff",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: 18,
+  fontSize: 17,
   fontWeight: 900,
   boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
   pointerEvents: "none"

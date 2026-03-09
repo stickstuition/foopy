@@ -100,7 +100,7 @@ export default function InputBox({
   aria-autocomplete="none"
   style={{
     width: "100%",
-    height: 46,
+    height: 42,
     padding: "0 14px",
     fontSize: 16,
     borderRadius: 10,
@@ -181,9 +181,9 @@ const buttonStyle = {
 };
 
 const skipStyle = {
-  marginTop: 8,
+  marginTop: 6,
   width: "100%",
-  height: 42,
+  height: 38,
   fontSize: 14,
   borderRadius: 10,
   cursor: "pointer",

@@ -42,7 +42,12 @@ export default function FoopyGameLayoutMobile({
       />
 
       {/* STAGE */}
-      <div style={stage}>
+      <div
+        style={{
+          ...stageBase,
+          bottom: kb ? kb + 112 : 112
+        }}
+      >
         <EquationRow
           players={question.players}
           operator={question.operator}
@@ -89,12 +94,11 @@ const wrap = {
   boxSizing: "border-box"
 };
 
-const stage = {
+const stageBase = {
   position: "absolute",
   top: 86,
   left: 0,
   right: 0,
-  bottom: 112,
   display: "flex",
   justifyContent: "center",
   alignItems: "flex-start",
@@ -108,8 +112,8 @@ const dock = {
   right: 0,
   bottom: 0,
   width: "100%",
-  padding: "10px 0 max(14px, env(safe-area-inset-bottom))",
-  background: "rgba(255,255,255,0.92)",
+  padding: "8px 0 max(10px, env(safe-area-inset-bottom))",
+  background: "rgba(255,255,255,0.94)",
   borderTop: "1px solid rgba(0,0,0,0.08)",
   boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
   zIndex: 40
