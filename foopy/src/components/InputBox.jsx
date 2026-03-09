@@ -17,6 +17,12 @@ export default function InputBox({
 
   const inputRef = useRef(null);
 
+    function lockViewportToTop() {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
   function submitFromInput(raw = value) {
     const trimmed = (raw ?? "").trim();
     if (!trimmed) {
@@ -84,7 +90,18 @@ export default function InputBox({
   value={value}
   placeholder="Enter player name"
   onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => {
+  onFocus={() => {
+    if (!isMobile) return;
+    lockViewportToTop();
+    requestAnimationFrame(() => lockViewportToTop());
+    setTimeout(() => lockViewportToTop(), 120);
+    setTimeout(() => lockViewportToTop(), 300);
+  }}
+  onTouchStart={() => {
+    if (!isMobile) return;
+    lockViewportToTop();
+  }}
+  onKeyDown={(e) => {
     if (!isMobile) return;
     if (e.key !== "Enter") return;
     e.preventDefault();
@@ -95,8 +112,8 @@ export default function InputBox({
   autoCapitalize="off"
   spellCheck={false}
   inputMode="text"
-    enterKeyHint="done"
-  name="not-a-name"
+  enterKeyHint="done"
+  name="foopy-answer"
   aria-autocomplete="none"
   style={{
     width: "100%",

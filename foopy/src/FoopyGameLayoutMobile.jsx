@@ -23,6 +23,7 @@ export default function FoopyGameLayoutMobile({
 }) {
   const isMobile = useIsMobile(480);
   const kb = useKeyboardOffset(isMobile);
+  const keyboardOpen = kb > 0;
 
   if (!question) return null;
 
@@ -45,15 +46,16 @@ export default function FoopyGameLayoutMobile({
       <div
         style={{
           ...stageBase,
-          bottom: kb ? kb + 112 : 112
+          bottom: keyboardOpen ? kb + 92 : 112
         }}
       >
         <EquationRow
           players={question.players}
           operator={question.operator}
-          showNumbers={mods?.showNumbers ?? true}
-          showNames={mods?.showNames ?? true}
+          showNumbers={keyboardOpen ? false : (mods?.showNumbers ?? true)}
+          showNames={keyboardOpen ? false : (mods?.showNames ?? true)}
           teamKey={answerTeam}
+          compactMobile={keyboardOpen}
         />
       </div>
 
@@ -96,14 +98,14 @@ const wrap = {
 
 const stageBase = {
   position: "absolute",
-  top: 86,
+  top: 104,
   left: 0,
   right: 0,
   display: "flex",
   justifyContent: "center",
-  alignItems: "flex-start",
+  alignItems: "center",
   overflow: "hidden",
-  paddingTop: 6
+  paddingTop: 0
 };
 
 const dock = {
@@ -113,8 +115,8 @@ const dock = {
   bottom: 0,
   width: "100%",
   padding: "8px 0 max(10px, env(safe-area-inset-bottom))",
-  background: "rgba(255,255,255,0.94)",
+  background: "rgba(255,255,255,0.96)",
   borderTop: "1px solid rgba(0,0,0,0.08)",
   boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
-  zIndex: 40
+  zIndex: 60
 };

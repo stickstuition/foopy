@@ -132,13 +132,12 @@ const panelWrap = {
 };
 
 const mobilePanelOverride = {
+  position: "fixed",
+  inset: 0,
   width: "100vw",
+  height: "100dvh",
   maxWidth: "100vw",
-
-  // ✅ iOS keyboard-safe: follow visual viewport height
-  height: "calc(var(--app-vh, 1vh) * 100)",
-  maxHeight: "calc(var(--app-vh, 1vh) * 100)",
-
+  maxHeight: "100dvh",
   borderRadius: 0,
   boxShadow: "none"
 };

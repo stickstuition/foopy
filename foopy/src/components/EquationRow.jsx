@@ -9,7 +9,8 @@ export default function EquationRow({
   showNumbers,
   showNames,
   teamKey,
-  answerPlayer
+  answerPlayer,
+  compactMobile = false
 }) {
   const isMobile = useIsMobile();
   const safePlayers = useMemo(() => (Array.isArray(players) ? players : []), [players]);
@@ -75,15 +76,10 @@ export default function EquationRow({
     };
   }, []);
 
-      const cardSize = isMobile ? "small" : "medium";
-
-  // Slightly tighter on desktop so the bottom (names/numbers) has room
-  const opSize = isMobile ? 28 : 38;
-  const gap = isMobile ? 10 : 12;
-
-  // Height of the "card row" (cards + operators + equals + badge)
-  // Used to align "=" with the players row (not the names/numbers).
-    const cardRowHeight = isMobile ? 108 : 192;
+  const cardSize = isMobile ? "small" : "medium";
+  const opSize = isMobile ? (compactMobile ? 24 : 28) : 38;
+  const gap = isMobile ? (compactMobile ? 6 : 10) : 12;
+  const cardRowHeight = isMobile ? (compactMobile ? 96 : 132) : 192;
   return (
     <div
       ref={outerRef}
@@ -92,8 +88,8 @@ export default function EquationRow({
   overflow: "hidden",
   display: "flex",
   justifyContent: "center",
-  paddingTop: isMobile ? 2 : 34,
-  marginBottom: isMobile ? 4 : 12,
+  paddingTop: isMobile ? (compactMobile ? 0 : 10) : 34,
+  marginBottom: isMobile ? (compactMobile ? 0 : 12) : 12,
   pointerEvents: isMobile ? "none" : "auto"
 }}
     >
@@ -125,14 +121,14 @@ export default function EquationRow({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: isMobile ? 6 : 14
+              gap: isMobile ? (compactMobile ? 0 : 6) : 14
             }}
           >
                         <div
   style={{
     display: "flex",
     alignItems: "center",
-    gap: isMobile ? 10 : 14,
+    gap: isMobile ? (compactMobile ? 6 : 10) : 14,
     height: cardRowHeight
   }}
 >
