@@ -46,7 +46,7 @@ export default function FoopyGameLayoutMobile({
       <div
         style={{
           ...stageBase,
-          bottom: keyboardOpen ? kb + 92 : 112
+          bottom: keyboardOpen ? 160 : 112
         }}
       >
         <EquationRow
@@ -63,7 +63,7 @@ export default function FoopyGameLayoutMobile({
       <div
         style={{
           ...dock,
-          transform: kb ? `translateY(-${kb}px)` : "translateY(0)"
+          bottom: kb > 0 ? kb : 0
         }}
       >
         <InputBox
