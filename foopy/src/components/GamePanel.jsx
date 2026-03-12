@@ -141,7 +141,8 @@ const mobilePanelOverride = {
   borderRadius: 0,
   boxShadow: "none",
   display: "flex",
-  flexDirection: "column"
+  flexDirection: "column",
+  overflow: "hidden"
 };
 
 const hudLayer = {
