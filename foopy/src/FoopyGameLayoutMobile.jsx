@@ -20,28 +20,33 @@ export default function FoopyGameLayoutMobile({
   skipLocked,
   time
 }) {
-  const [inputFocused, setInputFocused] = useState(false);
+  const [keyboard, setKeyboard] = useState(0);
 
   useEffect(() => {
-  function updateVH() {
-    const vh = window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight;
+    function update() {
+      const vv = window.visualViewport;
 
-    document.documentElement.style.setProperty("--vh", `${vh}px`);
-  }
+      if (!vv) return;
 
-  updateVH();
+      const kb =
+        window.innerHeight - vv.height - vv.offsetTop;
 
-  window.visualViewport?.addEventListener("resize", updateVH);
-  window.addEventListener("resize", updateVH);
+      setKeyboard(kb > 0 ? kb : 0);
+    }
 
-  return () => {
-    window.visualViewport?.removeEventListener("resize", updateVH);
-    window.removeEventListener("resize", updateVH);
-  };
-}, []);
+    update();
+
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+    };
+  }, []);
+
   if (!question) return null;
+
   const meProfile = profiles?.host;
   const meLabel = meProfile?.username ?? "You";
 
@@ -64,7 +69,7 @@ export default function FoopyGameLayoutMobile({
   }
 
   return (
-    <div style={shell}>
+    <div style={wrap}>
 
       <MobileTopBar
         singlePlayer
@@ -75,12 +80,11 @@ export default function FoopyGameLayoutMobile({
         delta={lastPoints}
       />
 
+      {/* EQUATION STAGE */}
       <div
         style={{
-          ...equationArea,
-          justifyContent: inputFocused ? "flex-end" : "center",
-          paddingTop: inputFocused ? 6 : 12,
-          paddingBottom: inputFocused ? 6 : 0
+          ...stage,
+          bottom: keyboard ? keyboard + 90 : 110
         }}
       >
         <EquationRow
@@ -89,12 +93,19 @@ export default function FoopyGameLayoutMobile({
           showNumbers={false}
           showNames={false}
           teamKey={answerTeam}
-          compactMobile
+          compactMobile={keyboard > 0}
         />
       </div>
 
-      <div style={inputArea}>
-
+      {/* INPUT DOCK */}
+      <div
+        style={{
+          ...dock,
+          transform: keyboard
+            ? `translateY(-${keyboard}px)`
+            : "translateY(0)"
+        }}
+      >
         <InputBox
           value={input}
           onChange={setInput}
@@ -105,43 +116,43 @@ export default function FoopyGameLayoutMobile({
           resultFlash={status}
           compactMobile
           suggestionsMaxHeight={56}
-          onInputFocus={() => setInputFocused(true)}
-          onInputBlur={() => {
-            setTimeout(() => setInputFocused(false), 120);
-          }}
         />
-
       </div>
 
     </div>
   );
 }
 
-const shell = {
+/* ---------- Styles ---------- */
+
+const wrap = {
   width: "100%",
-  height: "var(--vh)",
-  display: "flex",
-  flexDirection: "column",
+  height: "100%",
+  position: "relative",
   overflow: "hidden",
   background: "#fff"
 };
 
-const equationArea = {
-  flex: 1,
-  minHeight: 0,
+const stage = {
+  position: "absolute",
+  top: 110,
+  left: 0,
+  right: 0,
   display: "flex",
+  justifyContent: "center",
   alignItems: "center",
-  paddingLeft: 10,
-  paddingRight: 10,
-  overflow: "hidden"
+  paddingTop: 0
 };
 
-const inputArea = {
-  flexShrink: 0,
-  paddingLeft: 10,
-  paddingRight: 10,
-  paddingTop: 8,
-  paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
-  background: "rgba(255,255,255,0.98)",
-  borderTop: "1px solid rgba(0,0,0,0.08)"
+const dock = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  width: "100%",
+  padding: "8px 10px max(10px, env(safe-area-inset-bottom))",
+  background: "rgba(255,255,255,0.96)",
+  borderTop: "1px solid rgba(0,0,0,0.08)",
+  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
+  zIndex: 60
 };
