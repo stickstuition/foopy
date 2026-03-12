@@ -1,8 +1,8 @@
+import { useEffect, useState } from "react";
 import EquationRow from "./components/EquationRow";
 import InputBox from "./components/InputBox";
 import MobileTopBar from "./components/MobileTopBar";
 import useIsMobile from "./hooks/useIsMobile";
-import useKeyboardOffset from "./hooks/useKeyboardOffset";
 
 export default function FoopyGameLayoutMobile({
   user,
@@ -22,101 +22,104 @@ export default function FoopyGameLayoutMobile({
   time
 }) {
   const isMobile = useIsMobile(480);
-  const kb = useKeyboardOffset(isMobile);
-  const keyboardOpen = kb > 0;
+
+    const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    function update() {
+      const keyboard = window.innerHeight - vv.height;
+      setKeyboardOpen(keyboard > 120);
+    }
+
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   if (!question) return null;
 
   const meProfile = profiles?.host;
   const meLabel = meProfile?.username ?? "You";
 
-  return (
-    <div style={wrap}>
-      {/* TOP BAR (mobile-only) */}
-      <MobileTopBar
-        singlePlayer
-        meLabel={meLabel}
-        myScore={score}
-        myBadgeId={meProfile?.badgeEquipped ?? null}
-        time={time}
-        delta={lastPoints}
+return (
+  <div style={shell}>
+    <MobileTopBar
+      singlePlayer
+      meLabel={meLabel}
+      myScore={score}
+      myBadgeId={meProfile?.badgeEquipped ?? null}
+      time={time}
+      delta={lastPoints}
+    />
+
+    <div
+      style={{
+        ...playArea,
+        justifyContent: keyboardOpen ? "flex-start" : "center"
+      }}
+    >
+      <EquationRow
+        players={question.players}
+        operator={question.operator}
+        showNumbers={keyboardOpen ? false : (mods?.showNumbers ?? true)}
+        showNames={keyboardOpen ? false : (mods?.showNames ?? true)}
+        teamKey={answerTeam}
+        compactMobile={keyboardOpen}
       />
-
-      {/* STAGE */}
-      <div
-        style={{
-          ...stageBase,
-          bottom: keyboardOpen ? 160 : 112
-        }}
-      >
-        <EquationRow
-          players={question.players}
-          operator={question.operator}
-          showNumbers={keyboardOpen ? false : (mods?.showNumbers ?? true)}
-          showNames={keyboardOpen ? false : (mods?.showNames ?? true)}
-          teamKey={answerTeam}
-          compactMobile={keyboardOpen}
-        />
-      </div>
-
-      {/* BOTTOM DOCK */}
-      <div
-        style={{
-          ...dock,
-          bottom: kb > 0 ? kb : 0
-        }}
-      >
-        <InputBox
-          value={input}
-          onChange={setInput}
-          onSubmit={() => {
-            if (skipLocked) return;
-            const guess = suggestions.length > 0 ? suggestions[0].name : input;
-            submitGuess(guess);
-          }}
-          suggestions={suggestions}
-          onSelectSuggestion={(name) => {
-            if (skipLocked) return;
-            setInput(name);
-            submitGuess(name);
-          }}
-          onSkip={skipQuestion}
-          resultFlash={status}
-        />
-      </div>
     </div>
-  );
+
+    <div style={dock}>
+      <InputBox
+        value={input}
+        onChange={setInput}
+        onSubmit={() => {
+          if (skipLocked) return;
+          const guess = suggestions.length > 0 ? suggestions[0].name : input;
+          submitGuess(guess);
+        }}
+        suggestions={suggestions}
+        onSelectSuggestion={(name) => {
+          if (skipLocked) return;
+          setInput(name);
+          submitGuess(name);
+        }}
+        onSkip={skipQuestion}
+        resultFlash={status}
+      />
+    </div>
+  </div>
+);
 }
 
-const wrap = {
+const shell = {
   width: "100%",
-  height: "100%",
-  position: "relative",
+  height: "100dvh",
+  display: "flex",
+  flexDirection: "column",
   overflow: "hidden",
   boxSizing: "border-box"
 };
 
-const stageBase = {
-  position: "absolute",
-  top: 104,
-  left: 0,
-  right: 0,
+const playArea = {
+  flex: 1,
   display: "flex",
-  justifyContent: "center",
   alignItems: "center",
-  overflow: "hidden",
-  paddingTop: 0
+  justifyContent: "center",
+  paddingTop: 110
 };
 
 const dock = {
-  position: "absolute",
-  left: 0,
-  right: 0,
-  bottom: 0,
   width: "100%",
-  padding: "8px 0 max(10px, env(safe-area-inset-bottom))",
+  padding: "10px 0 max(12px, env(safe-area-inset-bottom))",
   background: "rgba(255,255,255,0.96)",
   borderTop: "1px solid rgba(0,0,0,0.08)",
-  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
-  zIndex: 60
+  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)"
 };
