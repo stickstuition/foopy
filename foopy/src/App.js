@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthContext";
 import LoginGate from "./auth/LoginGate";
 import OnboardingScreen from "./onboarding/OnboardingScreen";
@@ -7,7 +7,9 @@ import SettingsModal from "./ui/SettingsModal";
 import {
   setSoundEnabled,
   isSoundEnabled,
-  playUpClick
+  playUpClick,
+  startSoundtrack,
+  stopSoundtrack
 } from "./utils/uiSounds";
 
 import GameShell from "./components/GameShell";
@@ -55,6 +57,18 @@ function App() {
     hideCancel: false,
     onConfirm: null
   });
+
+  useEffect(() => {
+    if (user && soundOn) {
+      startSoundtrack();
+    } else {
+      stopSoundtrack();
+    }
+
+    return () => {
+      stopSoundtrack();
+    };
+  }, [user, soundOn]);
 
   function requestConfirm({
     title,

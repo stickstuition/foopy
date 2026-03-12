@@ -135,11 +135,13 @@ const mobilePanelOverride = {
   position: "fixed",
   inset: 0,
   width: "100vw",
-  height: "100dvh",
+  height: "100%",
   maxWidth: "100vw",
-  maxHeight: "100dvh",
+  maxHeight: "100%",
   borderRadius: 0,
-  boxShadow: "none"
+  boxShadow: "none",
+  display: "flex",
+  flexDirection: "column"
 };
 
 const hudLayer = {
