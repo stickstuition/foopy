@@ -18,11 +18,6 @@ export default function InputBox({
 
   const inputRef = useRef(null);
 
-    function lockViewportToTop() {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }
 
   function submitFromInput(raw = value) {
     const trimmed = (raw ?? "").trim();
@@ -98,19 +93,8 @@ export default function InputBox({
     if (disabled) return;
     onChange(e.target.value);
   }}
-  onFocus={() => {
-    if (disabled) return;
-    if (!isMobile) return;
-    lockViewportToTop();
-    requestAnimationFrame(() => lockViewportToTop());
-    setTimeout(() => lockViewportToTop(), 120);
-    setTimeout(() => lockViewportToTop(), 300);
-  }}
-  onTouchStart={() => {
-    if (disabled) return;
-    if (!isMobile) return;
-    lockViewportToTop();
-  }}
+
+
   onKeyDown={(e) => {
     if (!isMobile) return;
     if (e.key !== "Enter") return;
@@ -123,7 +107,6 @@ export default function InputBox({
   spellCheck={false}
   inputMode="text"
   enterKeyHint="done"
-  name="foopy-answer"
   aria-autocomplete="none"
   disabled={disabled}
   style={{
@@ -144,12 +127,8 @@ export default function InputBox({
       {suggestions.length > 0 && (
         <div
           style={{
-            position: "absolute",
-            top: 52,
-            left: 12,
-            right: 12,
-            width: "auto",
-            zIndex: 20
+            marginTop: 8,
+            width: "100%"
           }}
         >
           <Autocomplete suggestions={suggestions} onSelect={onSelectSuggestion} />

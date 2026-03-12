@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import EquationRow from "./components/EquationRow";
 import InputBox from "./components/InputBox";
 import MobileTopBar from "./components/MobileTopBar";
-import useIsMobile from "./hooks/useIsMobile";
 
 export default function FoopyGameLayoutMobile({
   user,
@@ -21,26 +20,51 @@ export default function FoopyGameLayoutMobile({
   skipLocked,
   time
 }) {
-  const isMobile = useIsMobile(480);
 
-    const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(
+    typeof window !== "undefined" ? window.innerHeight : 0
+  );
+  const [dockBottom, setDockBottom] = useState(0);
 
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
 
     function update() {
-      const keyboard = window.innerHeight - vv.height;
+      if (!vv) {
+        setViewportHeight(window.innerHeight);
+        setDockBottom(0);
+        setKeyboardOpen(false);
+        return;
+      }
+
+      const keyboard = Math.max(
+        0,
+        window.innerHeight - vv.height - vv.offsetTop
+      );
+
       setKeyboardOpen(keyboard > 120);
+      setViewportHeight(window.innerHeight);
+      setDockBottom(Math.round(keyboard));
     }
 
     update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
+
+    if (vv) {
+      vv.addEventListener("resize", update);
+      vv.addEventListener("scroll", update);
+    }
+
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
 
     return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
+      if (vv) {
+        vv.removeEventListener("resize", update);
+        vv.removeEventListener("scroll", update);
+      }
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
     };
   }, []);
 
@@ -50,7 +74,12 @@ export default function FoopyGameLayoutMobile({
   const meLabel = meProfile?.username ?? "You";
 
 return (
-  <div style={shell}>
+  <div
+    style={{
+      ...shell,
+      height: viewportHeight || window.innerHeight
+    }}
+  >
     <MobileTopBar
       singlePlayer
       meLabel={meLabel}
@@ -64,7 +93,8 @@ return (
   style={{
     ...playArea,
     justifyContent: keyboardOpen ? "flex-start" : "center",
-    paddingBottom: keyboardOpen ? 8 : 0
+    paddingTop: keyboardOpen ? 116 : 110,
+    paddingBottom: keyboardOpen ? 12 : 0
   }}
 >
       <EquationRow
@@ -77,7 +107,12 @@ return (
       />
     </div>
 
-    <div style={dock}>
+    <div
+      style={{
+        ...dock,
+        bottom: dockBottom
+      }}
+    >
       <InputBox
         value={input}
         onChange={setInput}
@@ -102,26 +137,31 @@ return (
 
 const shell = {
   width: "100%",
-  height: "100dvh",
-  display: "flex",
-  flexDirection: "column",
+  position: "relative",
   overflow: "hidden",
-  boxSizing: "border-box"
+  boxSizing: "border-box",
+  background: "#fff"
 };
 
 const playArea = {
-  flex: 1,
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 96,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  justifyContent: "center",
-  paddingTop: 110,
-  minHeight: 0
+  minHeight: 0,
+  overflow: "hidden"
 };
 const dock = {
-  width: "100%",
+  position: "absolute",
+  left: 0,
+  right: 0,
   padding: "10px 0 max(12px, env(safe-area-inset-bottom))",
-  background: "rgba(255,255,255,0.96)",
+  background: "rgba(255,255,255,0.98)",
   borderTop: "1px solid rgba(0,0,0,0.08)",
-  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)"
+  boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
+  zIndex: 80
 };

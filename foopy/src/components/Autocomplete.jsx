@@ -2,10 +2,10 @@ export default function Autocomplete({ suggestions, onSelect }) {
   return (
     <div style={{
       background: "#eee",
-      borderRadius: "8px",
-      marginTop: "8px",
-      maxHeight: "160px",
-      overflowY: "auto"
+      borderRadius: "10px",
+      maxHeight: "140px",
+      overflowY: "auto",
+      WebkitOverflowScrolling: "touch"
     }}>
             {suggestions.map((p) => (
         <div
