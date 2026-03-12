@@ -16,8 +16,8 @@ const METRICS = [
     key: "high_score",
     label: "Highest Score",
     header: "SCORE",
-    showGames: true,
-    showAccuracy: true
+    showGames: false,
+    showAccuracy: false
   },
   {
     key: "coins",
