@@ -29,11 +29,11 @@ export default function GamePanel({
 
   useEffect(() => {
     if (!isMobile) return;
+    if (mode !== "timed") return;
 
     const html = document.documentElement;
     const body = document.body;
     const root = document.getElementById("root");
-    const vv = window.visualViewport;
 
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
@@ -41,36 +41,19 @@ export default function GamePanel({
     const prevHtmlHeight = html.style.height;
     const prevBodyHeight = body.style.height;
     const prevRootHeight = root?.style.height ?? "";
+    const prevTouchAction = body.style.touchAction;
 
-    const setViewportVars = () => {
-      const height = vv?.height ?? window.innerHeight;
-      html.style.setProperty("--app-vh", `${height * 0.01}px`);
-    };
+    html.style.height = "100%";
+    body.style.height = "100%";
+    if (root) root.style.height = "100%";
 
-    const applyLock = () => {
-      if (mode !== "timed") return;
-      html.style.height = "100%";
-      body.style.height = "100%";
-      if (root) root.style.height = "100%";
-      html.style.overflow = "hidden";
-      body.style.overflow = "hidden";
-      if (root) root.style.overflow = "hidden";
-    };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    if (root) root.style.overflow = "hidden";
 
-    setViewportVars();
-    applyLock();
-
-    vv?.addEventListener("resize", setViewportVars);
-    vv?.addEventListener("scroll", setViewportVars);
-    window.addEventListener("resize", setViewportVars);
-    window.addEventListener("orientationchange", setViewportVars);
+    body.style.touchAction = "manipulation";
 
     return () => {
-      vv?.removeEventListener("resize", setViewportVars);
-      vv?.removeEventListener("scroll", setViewportVars);
-      window.removeEventListener("resize", setViewportVars);
-      window.removeEventListener("orientationchange", setViewportVars);
-
       html.style.overflow = prevHtmlOverflow;
       body.style.overflow = prevBodyOverflow;
       if (root) root.style.overflow = prevRootOverflow;
@@ -78,6 +61,8 @@ export default function GamePanel({
       html.style.height = prevHtmlHeight;
       body.style.height = prevBodyHeight;
       if (root) root.style.height = prevRootHeight;
+
+      body.style.touchAction = prevTouchAction;
     };
   }, [isMobile, mode]);
 
@@ -165,14 +150,15 @@ const mobilePanelOverride = {
   position: "fixed",
   inset: 0,
   width: "100vw",
-  height: "calc(var(--app-vh, 1vh) * 100)",
+  height: "100%",
   maxWidth: "100vw",
-  maxHeight: "calc(var(--app-vh, 1vh) * 100)",
+  maxHeight: "100%",
   borderRadius: 0,
   boxShadow: "none",
   display: "flex",
   flexDirection: "column",
-  overflow: "hidden"
+  overflow: "hidden",
+  touchAction: "manipulation"
 };
 
 const hudLayer = {

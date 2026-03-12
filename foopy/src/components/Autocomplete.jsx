@@ -4,7 +4,7 @@ export default function Autocomplete({ suggestions, onSelect, maxHeight = 140 })
       style={{
         background: "#eee",
         borderRadius: "10px",
-        maxHeight,
+        maxHeight: `${maxHeight}px`,
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         overscrollBehavior: "contain",

@@ -12,11 +12,8 @@ export default function InputBox({
   resultFlash,
   disabled = false,
   autoFocusInput = false,
-  onInputFocus,
-  onInputBlur,
   suggestionsMaxHeight = 140,
-  compactMobile = false,
-  hideSkip = false
+  compactMobile = false
 }) {
   const isMobile = useIsMobile(480);
   const [skipFlash, setSkipFlash] = useState(false);
@@ -42,10 +39,12 @@ export default function InputBox({
 
   useEffect(() => {
     if (!autoFocusInput) return;
-    const id = window.setTimeout(() => {
+
+    const t = window.setTimeout(() => {
       inputRef.current?.focus();
-    }, 30);
-    return () => window.clearTimeout(id);
+    }, 120);
+
+    return () => window.clearTimeout(t);
   }, [autoFocusInput]);
 
   useEffect(() => {
@@ -90,15 +89,14 @@ export default function InputBox({
         pointerEvents: "auto",
         touchAction: "manipulation",
         paddingLeft: isMobile ? 12 : 0,
-        paddingRight: isMobile ? 12 : 0
+        paddingRight: isMobile ? 12 : 0,
+        boxSizing: "border-box"
       }}
     >
       <input
         ref={inputRef}
         value={value}
         placeholder="Enter player"
-        onFocus={onInputFocus}
-        onBlur={onInputBlur}
         onChange={(e) => {
           if (disabled) return;
           onChange(e.target.value);
@@ -119,7 +117,7 @@ export default function InputBox({
         disabled={disabled}
         style={{
           width: "100%",
-          height: compactMobile ? 46 : 42,
+          height: compactMobile ? 48 : 42,
           padding: "0 14px",
           fontSize: 16,
           borderRadius: 12,
@@ -167,7 +165,7 @@ export default function InputBox({
         </button>
       )}
 
-      {!hideSkip && onSkip && (
+      {onSkip && (
         <button
           onClick={() => {
             setSkipFlash(true);
@@ -206,5 +204,6 @@ const skipStyle = {
   borderRadius: 10,
   cursor: "pointer",
   border: "none",
-  transition: "background 0.15s"
+  transition: "background 0.15s",
+  color: "#2f7df6"
 };

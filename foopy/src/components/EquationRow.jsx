@@ -77,8 +77,8 @@ export default function EquationRow({
   }, []);
 
   const cardSize = isMobile ? "small" : "medium";
-  const opSize = isMobile ? (compactMobile ? 24 : 28) : 38;
-  const gap = isMobile ? (compactMobile ? 6 : 10) : 12;
+  const opSize = isMobile ? (compactMobile ? 22 : 28) : 38;
+  const gap = isMobile ? (compactMobile ? 4 : 10) : 12;
   const cardRowHeight = isMobile ? (compactMobile ? 96 : 132) : 192;
   return (
     <div
@@ -106,12 +106,12 @@ export default function EquationRow({
     display: "flex",
     alignItems: "flex-start", // ✅ top-align columns so the badge card doesn't drop
     gap,
-    ...(isMobile
-  ? {}
-  : {
-      transform: `scale(${scale})`,
-      transformOrigin: "top center"
-    }),
+    ...((!isMobile || compactMobile)
+      ? {
+          transform: `scale(${compactMobile ? Math.min(scale, 0.9) : scale})`,
+          transformOrigin: "top center"
+        }
+      : {}),
   }}
 >
         {safePlayers.map((p, index) => (
