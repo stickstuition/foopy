@@ -1,16 +1,14 @@
 export default function Autocomplete({ suggestions, onSelect, maxHeight = 140 }) {
   return (
-    <div
-      style={{
-        background: "#eee",
-        borderRadius: "10px",
-        maxHeight: `${maxHeight}px`,
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-        overscrollBehavior: "contain",
-        border: "1px solid rgba(0,0,0,0.06)"
-      }}
-    >
+<div
+  style={{
+    background: "#eee",
+    borderRadius: "10px",
+    maxHeight: "180px",
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch"
+  }}
+>
       {suggestions.map((p) => (
         <div
           key={p.name}
