@@ -65,9 +65,6 @@ function App() {
       stopSoundtrack();
     }
 
-    return () => {
-      stopSoundtrack();
-    };
   }, [user, soundOn]);
 
   function requestConfirm({

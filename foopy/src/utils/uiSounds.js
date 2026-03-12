@@ -13,8 +13,9 @@ const SOUNDTRACK_FADE_STEP_MS = 50;
 const SOUNDTRACK_TARGET_VOLUME = 0.35;
 
 let soundtrackAudio = null;
-let soundtrackIndex = Math.floor(Math.random() * SOUNDTRACK_FILES.length);
+let soundtrackIndex = 0;
 let soundtrackStarted = false;
+let soundtrackHasStartedOnce = false;
 let fadeInterval = null;
 let transitionTimeout = null;
 
@@ -37,6 +38,10 @@ function clearSoundtrackTimers() {
 }
 
 function ensureSoundtrackAudio() {
+    if (!soundtrackHasStartedOnce) {
+    soundtrackIndex = Math.floor(Math.random() * SOUNDTRACK_FILES.length);
+    soundtrackHasStartedOnce = true;
+  }
   if (soundtrackAudio) return soundtrackAudio;
 
   soundtrackAudio = new Audio(SOUNDTRACK_FILES[soundtrackIndex]);
@@ -108,6 +113,12 @@ function playNextSoundtrackTrack() {
 
 export function startSoundtrack() {
   soundtrackStarted = true;
+
+  if (!soundtrackAudio) {
+    soundtrackIndex = Math.floor(Math.random() * SOUNDTRACK_FILES.length);
+    soundtrackHasStartedOnce = true;
+  }
+
   playCurrentSoundtrackTrack();
 }
 
@@ -121,6 +132,7 @@ export function stopSoundtrack() {
   fadeAudioTo(audio, 0, SOUNDTRACK_FADE_MS, () => {
     audio.pause();
     audio.currentTime = 0;
+    soundtrackAudio = null;
   });
 }
 

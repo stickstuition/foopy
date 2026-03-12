@@ -39,7 +39,7 @@ const coinsBeforeRef = useRef(null);
   const [skipLocked, setSkipLocked] = useState(false);
   const [lastPoints, setLastPoints] = useState(null);
   const [committing, setCommitting] = useState(false);
-const isMobile = useIsMobile();
+const isMobile = useIsMobile(480);
 
   // mods → ballup → playing → gameover
 

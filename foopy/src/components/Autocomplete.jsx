@@ -1,17 +1,20 @@
-export default function Autocomplete({ suggestions, onSelect }) {
+export default function Autocomplete({ suggestions, onSelect, maxHeight = 140 }) {
   return (
-    <div style={{
-      background: "#eee",
-      borderRadius: "10px",
-      maxHeight: "140px",
-      overflowY: "auto",
-      WebkitOverflowScrolling: "touch"
-    }}>
-            {suggestions.map((p) => (
+    <div
+      style={{
+        background: "#eee",
+        borderRadius: "10px",
+        maxHeight,
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        overscrollBehavior: "contain",
+        border: "1px solid rgba(0,0,0,0.06)"
+      }}
+    >
+      {suggestions.map((p) => (
         <div
           key={p.name}
           onPointerDown={(e) => {
-            // Mobile: prevent input blur / keyboard dismissal
             e.preventDefault();
             onSelect(p.name);
           }}

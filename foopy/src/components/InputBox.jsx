@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Autocomplete from "./Autocomplete";
 import useIsMobile from "../hooks/useIsMobile";
 
@@ -10,13 +10,18 @@ export default function InputBox({
   onSelectSuggestion,
   onSkip,
   resultFlash,
-  disabled = false
+  disabled = false,
+  autoFocusInput = false,
+  onInputFocus,
+  onInputBlur,
+  suggestionsMaxHeight = 140,
+  compactMobile = false,
+  hideSkip = false
 }) {
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(480);
   const [skipFlash, setSkipFlash] = useState(false);
   const [errorFlash, setErrorFlash] = useState(false);
-
-
+  const inputRef = useRef(null);
 
   function submitFromInput(raw = value) {
     const trimmed = (raw ?? "").trim();
@@ -36,13 +41,20 @@ export default function InputBox({
   }
 
   useEffect(() => {
+    if (!autoFocusInput) return;
+    const id = window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 30);
+    return () => window.clearTimeout(id);
+  }, [autoFocusInput]);
+
+  useEffect(() => {
     if (resultFlash !== "wrong") return;
     setErrorFlash(true);
     const t = setTimeout(() => setErrorFlash(false), 200);
     return () => clearTimeout(t);
   }, [resultFlash]);
 
-  // keyboard controls (desktop only)
   useEffect(() => {
     if (isMobile) return;
 
@@ -57,70 +69,68 @@ export default function InputBox({
       }
 
       if (e.key === "Enter") {
-                submitFromInput();
+        submitFromInput();
       }
     }
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [isMobile, value, suggestions, onSubmit, onSelectSuggestion, onSkip]);
+  }, [isMobile, disabled, value, suggestions, onSubmit, onSelectSuggestion, onSkip]);
 
   return (
-        <div
+    <div
       style={{
-  width: "100%",
-  maxWidth: 360,
-  margin: "0 auto",
-  display: "flex",
-  flexDirection: "column",
-  position: "relative",
-
-  // ✅ Ensure input layer stays tappable above layout overlays
-  zIndex: isMobile ? 50 : "auto",
-  pointerEvents: "auto",
-  touchAction: "manipulation",
-
-  paddingLeft: isMobile ? 12 : 0,
-  paddingRight: isMobile ? 12 : 0
-}}
+        width: "100%",
+        maxWidth: compactMobile ? 420 : 360,
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        zIndex: isMobile ? 50 : "auto",
+        pointerEvents: "auto",
+        touchAction: "manipulation",
+        paddingLeft: isMobile ? 12 : 0,
+        paddingRight: isMobile ? 12 : 0
+      }}
     >
-<input
-  value={value}
-  placeholder="Enter player"
-  onChange={(e) => {
-    if (disabled) return;
-    onChange(e.target.value);
-  }}
-
-
-  onKeyDown={(e) => {
-    if (!isMobile) return;
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    submitFromInput();
-  }}
-  autoComplete="off"
-  autoCorrect="off"
-  autoCapitalize="off"
-  spellCheck={false}
-  inputMode="text"
-  enterKeyHint="done"
-  aria-autocomplete="none"
-  disabled={disabled}
-  style={{
-    width: "100%",
-    height: 42,
-    padding: "0 14px",
-    fontSize: 16,
-    borderRadius: 10,
-    border: errorFlash ? "2px solid #ff6b6b" : "1px solid #ccc",
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border 0.15s",
-    opacity: disabled ? 0.7 : 1
-  }}
-/>
-
+      <input
+        ref={inputRef}
+        value={value}
+        placeholder="Enter player"
+        onFocus={onInputFocus}
+        onBlur={onInputBlur}
+        onChange={(e) => {
+          if (disabled) return;
+          onChange(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (!isMobile) return;
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          submitFromInput();
+        }}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        inputMode="text"
+        enterKeyHint="done"
+        aria-autocomplete="none"
+        disabled={disabled}
+        style={{
+          width: "100%",
+          height: compactMobile ? 46 : 42,
+          padding: "0 14px",
+          fontSize: 16,
+          borderRadius: 12,
+          border: errorFlash ? "2px solid #ff6b6b" : "1px solid #ccc",
+          outline: "none",
+          boxSizing: "border-box",
+          transition: "border 0.15s",
+          opacity: disabled ? 0.7 : 1,
+          background: "#fff"
+        }}
+      />
 
       {suggestions.length > 0 && (
         <div
@@ -129,11 +139,14 @@ export default function InputBox({
             width: "100%"
           }}
         >
-          <Autocomplete suggestions={suggestions} onSelect={onSelectSuggestion} />
+          <Autocomplete
+            suggestions={suggestions}
+            onSelect={onSelectSuggestion}
+            maxHeight={suggestionsMaxHeight}
+          />
         </div>
       )}
 
-      {/* Desktop only ENTER */}
       {!isMobile && (
         <button
           onClick={() => {
@@ -154,8 +167,7 @@ export default function InputBox({
         </button>
       )}
 
-      {/* Skip: remove (CTRL) on mobile */}
-      {onSkip && (
+      {!hideSkip && onSkip && (
         <button
           onClick={() => {
             setSkipFlash(true);
@@ -187,9 +199,9 @@ const buttonStyle = {
 };
 
 const skipStyle = {
-  marginTop: 6,
+  marginTop: 8,
   width: "100%",
-  height: 38,
+  height: 40,
   fontSize: 14,
   borderRadius: 10,
   cursor: "pointer",

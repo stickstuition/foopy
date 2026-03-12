@@ -27,29 +27,59 @@ export default function GamePanel({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-      useEffect(() => {
+  useEffect(() => {
     if (!isMobile) return;
 
-    const setStableVh = () => {
-      const h = window.innerHeight;
-      const vh = h * 0.01;
-      document.documentElement.style.setProperty("--app-vh", `${vh}px`);
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById("root");
+    const vv = window.visualViewport;
+
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevRootOverflow = root?.style.overflow ?? "";
+    const prevHtmlHeight = html.style.height;
+    const prevBodyHeight = body.style.height;
+    const prevRootHeight = root?.style.height ?? "";
+
+    const setViewportVars = () => {
+      const height = vv?.height ?? window.innerHeight;
+      html.style.setProperty("--app-vh", `${height * 0.01}px`);
     };
 
-    setStableVh();
-
-    const handleOrientationChange = () => {
-      setTimeout(() => {
-        setStableVh();
-      }, 250);
+    const applyLock = () => {
+      if (mode !== "timed") return;
+      html.style.height = "100%";
+      body.style.height = "100%";
+      if (root) root.style.height = "100%";
+      html.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+      if (root) root.style.overflow = "hidden";
     };
 
-    window.addEventListener("orientationchange", handleOrientationChange);
+    setViewportVars();
+    applyLock();
+
+    vv?.addEventListener("resize", setViewportVars);
+    vv?.addEventListener("scroll", setViewportVars);
+    window.addEventListener("resize", setViewportVars);
+    window.addEventListener("orientationchange", setViewportVars);
 
     return () => {
-      window.removeEventListener("orientationchange", handleOrientationChange);
+      vv?.removeEventListener("resize", setViewportVars);
+      vv?.removeEventListener("scroll", setViewportVars);
+      window.removeEventListener("resize", setViewportVars);
+      window.removeEventListener("orientationchange", setViewportVars);
+
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      if (root) root.style.overflow = prevRootOverflow;
+
+      html.style.height = prevHtmlHeight;
+      body.style.height = prevBodyHeight;
+      if (root) root.style.height = prevRootHeight;
     };
-  }, [isMobile]);
+  }, [isMobile, mode]);
 
   return (
     <div
@@ -135,9 +165,9 @@ const mobilePanelOverride = {
   position: "fixed",
   inset: 0,
   width: "100vw",
-  height: "100%",
+  height: "calc(var(--app-vh, 1vh) * 100)",
   maxWidth: "100vw",
-  maxHeight: "100%",
+  maxHeight: "calc(var(--app-vh, 1vh) * 100)",
   borderRadius: 0,
   boxShadow: "none",
   display: "flex",
