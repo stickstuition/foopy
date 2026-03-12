@@ -20,12 +20,10 @@ html, body, #root {
     overscroll-behavior: none;
   }
 
-  body {
-    touch-action: manipulation;
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-  }
+body {
+  touch-action: manipulation;
+  overflow: hidden;
+}
 }
 
 code {

@@ -135,7 +135,7 @@ const teamPlayers = pool[question.team];
     setSuggestions(
       teamPlayers
         .filter(p => p.name.toLowerCase().includes(q))
-        .slice(0, 6)
+        .slice(0, isMobile ? 1 : 6)
     );
   }, [input, question]);
 

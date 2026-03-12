@@ -88,15 +88,16 @@ export default function FoopyGameLayoutMobile({
       <div style={inputArea}>
 
         <InputBox
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          suggestions={suggestions}
-          onSelectSuggestion={handleSelectSuggestion}
-          onSkip={skipQuestion}
-          resultFlash={status}
-          compactMobile
-        />
+  value={input}
+  onChange={setInput}
+  onSubmit={handleSubmit}
+  suggestions={suggestions}
+  onSelectSuggestion={handleSelectSuggestion}
+  onSkip={skipQuestion}
+  resultFlash={status}
+  compactMobile
+  suggestionsMaxHeight={60}
+/>
 
       </div>
 
@@ -116,7 +117,6 @@ const shell = {
 const equationArea = {
   flex: 1,
   minHeight: 0,
-  maxHeight: 180,
   display: "flex",
   alignItems: "flex-start",
 paddingTop: 12,
