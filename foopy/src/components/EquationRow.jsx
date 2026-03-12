@@ -77,9 +77,9 @@ export default function EquationRow({
   }, []);
 
   const cardSize = isMobile ? "small" : "medium";
-  const opSize = isMobile ? (compactMobile ? 22 : 28) : 38;
-  const gap = isMobile ? (compactMobile ? 4 : 10) : 12;
-  const cardRowHeight = isMobile ? (compactMobile ? 96 : 132) : 192;
+  const opSize = isMobile ? (compactMobile ? 20 : 28) : 38;
+  const gap = isMobile ? (compactMobile ? 2 : 10) : 12;
+  const cardRowHeight = isMobile ? (compactMobile ? 88 : 132) : 192;
   return (
     <div
       ref={outerRef}
@@ -108,7 +108,7 @@ export default function EquationRow({
     gap,
     ...((!isMobile || compactMobile)
       ? {
-          transform: `scale(${compactMobile ? Math.min(scale, 0.9) : scale})`,
+          transform: `scale(${compactMobile ? Math.min(scale, 0.82) : scale})`,
           transformOrigin: "top center"
         }
       : {}),
@@ -198,8 +198,8 @@ export default function EquationRow({
                         {!answerPlayer && (
               <div
                 style={{
-                  width: isMobile ? 96 : 140,
-                  height: isMobile ? 132 : 192,
+                  width: isMobile ? 88 : 140,
+                  height: isMobile ? 120 : 192,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center"

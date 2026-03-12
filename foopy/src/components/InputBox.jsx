@@ -13,7 +13,9 @@ export default function InputBox({
   disabled = false,
   autoFocusInput = false,
   suggestionsMaxHeight = 140,
-  compactMobile = false
+  compactMobile = false,
+  onInputFocus,
+  onInputBlur
 }) {
   const isMobile = useIsMobile(480);
   const [skipFlash, setSkipFlash] = useState(false);
@@ -101,6 +103,8 @@ export default function InputBox({
           if (disabled) return;
           onChange(e.target.value);
         }}
+        onFocus={onInputFocus}
+        onBlur={onInputBlur}
         onKeyDown={(e) => {
           if (!isMobile) return;
           if (e.key !== "Enter") return;

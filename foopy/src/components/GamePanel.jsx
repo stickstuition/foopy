@@ -150,9 +150,9 @@ const mobilePanelOverride = {
   position: "fixed",
   inset: 0,
   width: "100vw",
-  height: "100%",
+  height: "var(--vh)",
   maxWidth: "100vw",
-  maxHeight: "100%",
+  maxHeight: "var(--vh)",
   borderRadius: 0,
   boxShadow: "none",
   display: "flex",
@@ -160,7 +160,6 @@ const mobilePanelOverride = {
   overflow: "hidden",
   touchAction: "manipulation"
 };
-
 const hudLayer = {
   position: "absolute",
   top: 16,

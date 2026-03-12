@@ -1,7 +1,7 @@
 import EquationRow from "./components/EquationRow";
 import InputBox from "./components/InputBox";
 import MobileTopBar from "./components/MobileTopBar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function FoopyGameLayoutMobile({
   user,
@@ -20,8 +20,8 @@ export default function FoopyGameLayoutMobile({
   skipLocked,
   time
 }) {
+  const [inputFocused, setInputFocused] = useState(false);
 
-  if (!question) return null;
   useEffect(() => {
   function updateVH() {
     const vh = window.visualViewport
@@ -41,6 +41,7 @@ export default function FoopyGameLayoutMobile({
     window.removeEventListener("resize", updateVH);
   };
 }, []);
+  if (!question) return null;
   const meProfile = profiles?.host;
   const meLabel = meProfile?.username ?? "You";
 
@@ -74,7 +75,14 @@ export default function FoopyGameLayoutMobile({
         delta={lastPoints}
       />
 
-      <div style={equationArea}>
+      <div
+        style={{
+          ...equationArea,
+          justifyContent: inputFocused ? "flex-end" : "center",
+          paddingTop: inputFocused ? 6 : 12,
+          paddingBottom: inputFocused ? 6 : 0
+        }}
+      >
         <EquationRow
           players={question.players}
           operator={question.operator}
@@ -88,16 +96,20 @@ export default function FoopyGameLayoutMobile({
       <div style={inputArea}>
 
         <InputBox
-  value={input}
-  onChange={setInput}
-  onSubmit={handleSubmit}
-  suggestions={suggestions}
-  onSelectSuggestion={handleSelectSuggestion}
-  onSkip={skipQuestion}
-  resultFlash={status}
-  compactMobile
-  suggestionsMaxHeight={60}
-/>
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          suggestions={suggestions}
+          onSelectSuggestion={handleSelectSuggestion}
+          onSkip={skipQuestion}
+          resultFlash={status}
+          compactMobile
+          suggestionsMaxHeight={56}
+          onInputFocus={() => setInputFocused(true)}
+          onInputBlur={() => {
+            setTimeout(() => setInputFocused(false), 120);
+          }}
+        />
 
       </div>
 
@@ -118,19 +130,18 @@ const equationArea = {
   flex: 1,
   minHeight: 0,
   display: "flex",
-  alignItems: "flex-start",
-paddingTop: 12,
-  justifyContent: "center",
+  alignItems: "center",
   paddingLeft: 10,
-  paddingRight: 10
+  paddingRight: 10,
+  overflow: "hidden"
 };
 
 const inputArea = {
   flexShrink: 0,
   paddingLeft: 10,
   paddingRight: 10,
-  paddingTop: 10,
-  paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
+  paddingTop: 8,
+  paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
   background: "rgba(255,255,255,0.98)",
   borderTop: "1px solid rgba(0,0,0,0.08)"
 };
