@@ -60,12 +60,13 @@ return (
       delta={lastPoints}
     />
 
-    <div
-      style={{
-        ...playArea,
-        justifyContent: keyboardOpen ? "flex-start" : "center"
-      }}
-    >
+<div
+  style={{
+    ...playArea,
+    justifyContent: keyboardOpen ? "flex-start" : "center",
+    paddingBottom: keyboardOpen ? 8 : 0
+  }}
+>
       <EquationRow
         players={question.players}
         operator={question.operator}
@@ -111,11 +112,12 @@ const shell = {
 const playArea = {
   flex: 1,
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  paddingTop: 110
+  paddingTop: 110,
+  minHeight: 0
 };
-
 const dock = {
   width: "100%",
   padding: "10px 0 max(12px, env(safe-area-inset-bottom))",

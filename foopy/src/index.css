@@ -21,11 +21,9 @@ html, body, #root {
     -webkit-overflow-scrolling: auto;
   }
 
-  body {
-    position: fixed;
-    inset: 0;
-    touch-action: manipulation;
-  }
+body {
+  touch-action: manipulation;
+}
 }
 
 code {
