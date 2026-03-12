@@ -1,6 +1,7 @@
 import EquationRow from "./components/EquationRow";
 import InputBox from "./components/InputBox";
 import MobileTopBar from "./components/MobileTopBar";
+import { useEffect } from "react";
 
 export default function FoopyGameLayoutMobile({
   user,
@@ -21,7 +22,25 @@ export default function FoopyGameLayoutMobile({
 }) {
 
   if (!question) return null;
+  useEffect(() => {
+  function updateVH() {
+    const vh = window.visualViewport
+      ? window.visualViewport.height
+      : window.innerHeight;
 
+    document.documentElement.style.setProperty("--vh", `${vh}px`);
+  }
+
+  updateVH();
+
+  window.visualViewport?.addEventListener("resize", updateVH);
+  window.addEventListener("resize", updateVH);
+
+  return () => {
+    window.visualViewport?.removeEventListener("resize", updateVH);
+    window.removeEventListener("resize", updateVH);
+  };
+}, []);
   const meProfile = profiles?.host;
   const meLabel = meProfile?.username ?? "You";
 
@@ -87,7 +106,7 @@ export default function FoopyGameLayoutMobile({
 
 const shell = {
   width: "100%",
-  height: "100%",
+  height: "var(--vh)",
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
@@ -97,8 +116,10 @@ const shell = {
 const equationArea = {
   flex: 1,
   minHeight: 0,
+  maxHeight: 180,
   display: "flex",
-  alignItems: "center",
+  alignItems: "flex-start",
+paddingTop: 12,
   justifyContent: "center",
   paddingLeft: 10,
   paddingRight: 10

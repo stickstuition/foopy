@@ -107,6 +107,13 @@ export default function InputBox({
           e.preventDefault();
           submitFromInput();
         }}
+        onFocus={(e) => {
+  if (window.visualViewport) {
+    setTimeout(() => {
+      e.target.scrollIntoView({ block: "center" });
+    }, 50);
+  }
+}}
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
