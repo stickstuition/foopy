@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Autocomplete from "./Autocomplete";
 import useIsMobile from "../hooks/useIsMobile";
 
@@ -16,7 +16,6 @@ export default function InputBox({
   const [skipFlash, setSkipFlash] = useState(false);
   const [errorFlash, setErrorFlash] = useState(false);
 
-  const inputRef = useRef(null);
 
 
   function submitFromInput(raw = value) {
@@ -86,7 +85,6 @@ export default function InputBox({
 }}
     >
 <input
-  ref={inputRef}
   value={value}
   placeholder="Enter player"
   onChange={(e) => {

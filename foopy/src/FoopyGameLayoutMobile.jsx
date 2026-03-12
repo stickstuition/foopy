@@ -25,7 +25,6 @@ export default function FoopyGameLayoutMobile({
   const [viewportHeight, setViewportHeight] = useState(
     typeof window !== "undefined" ? window.innerHeight : 0
   );
-  const [dockBottom, setDockBottom] = useState(0);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -33,7 +32,6 @@ export default function FoopyGameLayoutMobile({
     function update() {
       if (!vv) {
         setViewportHeight(window.innerHeight);
-        setDockBottom(0);
         setKeyboardOpen(false);
         return;
       }
@@ -44,8 +42,7 @@ export default function FoopyGameLayoutMobile({
       );
 
       setKeyboardOpen(keyboard > 120);
-      setViewportHeight(window.innerHeight);
-      setDockBottom(Math.round(keyboard));
+      setViewportHeight(Math.round(vv.height));
     }
 
     update();
@@ -93,8 +90,8 @@ return (
   style={{
     ...playArea,
     justifyContent: keyboardOpen ? "flex-start" : "center",
-    paddingTop: keyboardOpen ? 116 : 110,
-    paddingBottom: keyboardOpen ? 12 : 0
+    paddingTop: keyboardOpen ? 112 : 110,
+    paddingBottom: keyboardOpen ? 8 : 0
   }}
 >
       <EquationRow
@@ -107,12 +104,7 @@ return (
       />
     </div>
 
-    <div
-      style={{
-        ...dock,
-        bottom: dockBottom
-      }}
-    >
+    <div style={dock}>
       <InputBox
         value={input}
         onChange={setInput}
@@ -137,18 +129,15 @@ return (
 
 const shell = {
   width: "100%",
-  position: "relative",
+  display: "flex",
+  flexDirection: "column",
   overflow: "hidden",
   boxSizing: "border-box",
   background: "#fff"
 };
 
 const playArea = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 96,
+  flex: 1,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -156,12 +145,11 @@ const playArea = {
   overflow: "hidden"
 };
 const dock = {
-  position: "absolute",
-  left: 0,
-  right: 0,
+  width: "100%",
   padding: "10px 0 max(12px, env(safe-area-inset-bottom))",
   background: "rgba(255,255,255,0.98)",
   borderTop: "1px solid rgba(0,0,0,0.08)",
   boxShadow: "0 -12px 30px rgba(0,0,0,0.10)",
-  zIndex: 80
+  zIndex: 80,
+  flexShrink: 0
 };
