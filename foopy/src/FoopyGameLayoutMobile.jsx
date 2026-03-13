@@ -84,7 +84,9 @@ export default function FoopyGameLayoutMobile({
       <div
         style={{
           ...stage,
-          bottom: keyboard ? keyboard + 90 : 110
+          transform: keyboard
+            ? `translateY(-${Math.min(keyboard, 220)}px)`
+            : "translateY(0)"
         }}
       >
         <EquationRow

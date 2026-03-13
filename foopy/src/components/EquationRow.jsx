@@ -85,7 +85,8 @@ export default function EquationRow({
       ref={outerRef}
       style={{
   width: "100%",
-  overflow: "hidden",
+  overflowX: "hidden",
+  overflowY: "visible",
   display: "flex",
   justifyContent: "center",
   paddingTop: isMobile ? (compactMobile ? 0 : 10) : 34,
