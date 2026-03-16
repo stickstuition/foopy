@@ -92,8 +92,8 @@ export default function FoopyGameLayoutMobile({
         <EquationRow
           players={question.players}
           operator={question.operator}
-          showNumbers={false}
-          showNames={false}
+          showNumbers={mods?.showNumbers ?? true}
+          showNames={mods?.showNames ?? true}
           teamKey={answerTeam}
           compactMobile={keyboard > 0}
         />
