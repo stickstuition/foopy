@@ -42,17 +42,26 @@ const METRICS = [
   }
 ];
 
+const PAGE_SIZE_MOBILE = 8;
+const PAGE_SIZE_DESKTOP = 12;
+
 export default function LeaderboardModal({ open, onClose }) {
     const isMobile = useIsMobile(480);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [metric, setMetric] = useState("high_score");
   const [period, setPeriod] = useState("all");
+    const [page, setPage] = useState(1);
+    
 
   const metricMeta = useMemo(
     () => METRICS.find(m => m.key === metric) ?? METRICS[0],
     [metric]
   );
+    const pageSize = isMobile ? PAGE_SIZE_MOBILE : PAGE_SIZE_DESKTOP;
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const visibleRows = rows.slice(pageStart, pageStart + pageSize);
 
   /* ---------- FETCH ---------- */
 useEffect(() => {
@@ -68,6 +77,16 @@ useEffect(() => {
     .catch(() => setLoading(false));
 }, [open, metric, period]);
 
+useEffect(() => {
+  if (!open) return;
+  setPage(1);
+}, [open, metric, period]);
+
+useEffect(() => {
+  if (page > totalPages) {
+    setPage(totalPages);
+  }
+}, [page, totalPages]);
 
   if (!open) return null;
 
@@ -139,28 +158,81 @@ useEffect(() => {
               </div>
 
               {/* ROWS */}
-              {rows.map((r, i) => (
-                <div
-                  key={`${metric}-${period}-${r.username}-${i}`}
-                  style={{ ...row, gridTemplateColumns: gridCols }}
-                >
-                  <div style={rank(i)}>{i + 1}</div>
-                  <div style={player}>{r.username}</div>
-                  <div style={valueCell}>{r.value ?? "—"}</div>
+              <div style={listScroll}>
+                {visibleRows.map((r, i) => {
+                  const absoluteIndex = pageStart + i;
 
-                  {metricMeta.showGames && (
-                    <div style={gamesCell}>{r.games_played ?? "—"}</div>
-                  )}
+                  return (
+                    <div
+                      key={`${metric}-${period}-${r.username}-${absoluteIndex}`}
+                      style={{ ...row, gridTemplateColumns: gridCols }}
+                    >
+                      <div style={rank(absoluteIndex)}>{absoluteIndex + 1}</div>
+                      <div style={player}>{r.username}</div>
+                      <div style={valueCell}>{r.value ?? "—"}</div>
 
-                  {metricMeta.showAccuracy && (
-                    <div style={accCell}>
-                      {r.accuracy == null
-                        ? "—"
-                        : `${Math.round(r.accuracy * 100)}%`}
+                      {metricMeta.showGames && (
+                        <div style={gamesCell}>{r.games_played ?? "—"}</div>
+                      )}
+
+                      {metricMeta.showAccuracy && (
+                        <div style={accCell}>
+                          {r.accuracy == null
+                            ? "—"
+                            : `${Math.round(r.accuracy * 100)}%`}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+
+              {totalPages > 1 && (
+                <div style={pagerWrap}>
+                  <button
+                    type="button"
+                    style={{
+                      ...pageBtn,
+                      ...(page === 1 ? pageBtnDisabled : {})
+                    }}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Prev
+                  </button>
+
+                  <div style={pageTabs}>
+                    {Array.from({ length: totalPages }, (_, idx) => {
+                      const pageNumber = idx + 1;
+                      return (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          style={{
+                            ...pageTab,
+                            ...(page === pageNumber ? pageTabActive : {})
+                          }}
+                          onClick={() => setPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    style={{
+                      ...pageBtn,
+                      ...(page === totalPages ? pageBtnDisabled : {})
+                    }}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -314,20 +386,40 @@ const periodTabActive = {
 
 const body = (mobile) => ({
   padding: mobile ? 12 : 18,
-
-  // ✅ Desktop: no internal scrolling (regression fix)
-  overflowY: mobile ? "auto" : "hidden"
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  flex: 1,
+  minHeight: 0,
+  overflow: "hidden"
 });
 const note = { opacity: 0.6 };
 
-const list = { display: "flex", flexDirection: "column", gap: 6 };
+const list = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  flex: 1,
+  minHeight: 0,
+  overflow: "hidden"
+};
 
+const listScroll = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  flex: 1,
+  overflowY: "auto",
+  minHeight: 0,
+  paddingRight: 2
+};
 const listHeader = {
   display: "grid",
   fontWeight: 800,
   fontSize: 13,
   opacity: 0.65,
-  padding: "6px 10px"
+  padding: "6px 10px",
+  flexShrink: 0
 };
 
 const row = {
@@ -352,3 +444,57 @@ const player = { fontWeight: 700 };
 const valueCell = { fontWeight: 900 };
 const gamesCell = { opacity: 0.8 };
 const accCell = { fontWeight: 700 };
+
+const pagerWrap = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  paddingTop: 4,
+  flexShrink: 0
+};
+
+const pageTabs = {
+  display: "flex",
+  gap: 8,
+  overflowX: "auto",
+  overflowY: "hidden",
+  flex: 1,
+  justifyContent: "center",
+  WebkitOverflowScrolling: "touch"
+};
+
+const pageBtn = {
+  border: "none",
+  borderRadius: 10,
+  padding: "10px 14px",
+  fontWeight: 800,
+  background: "#212529",
+  color: "#fff",
+  cursor: "pointer",
+  flexShrink: 0
+};
+
+const pageBtnDisabled = {
+  opacity: 0.45,
+  cursor: "default"
+};
+
+const pageTab = {
+  border: "none",
+  borderRadius: 10,
+  minWidth: 40,
+  height: 40,
+  padding: "0 12px",
+  fontWeight: 800,
+  background: "#dee2e6",
+  color: "#111",
+  cursor: "pointer",
+  flex: "0 0 auto"
+};
+
+const pageTabActive = {
+  background: "linear-gradient(to bottom, #4dabf7, #1c7ed6)",
+  color: "#fff",
+  boxShadow: "0 3px 0 rgba(0,0,0,0.25)"
+};
