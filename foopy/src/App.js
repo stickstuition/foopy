@@ -40,6 +40,7 @@ function App() {
 
   /* ---------- Game mode ---------- */
   const [mode, setMode] = useState("menu");
+  const [classroomHomeAction, setClassroomHomeAction] = useState(null);
 
   /*
     Leave guard:
@@ -90,6 +91,11 @@ function App() {
   function handleHomeRequest() {
     if (mode === "menu") return;
 
+    if (mode === "classroom" && classroomHomeAction) {
+      classroomHomeAction();
+      return;
+    }
+
     const isOnlineBattle =
       mode === "battle-host" || mode === "battle-join";
 
@@ -135,16 +141,19 @@ function App() {
   } else {
     if (!user.onboarded) {
       content = <OnboardingScreen />;
-    } else if (mode === "timed") {
+    } else if (mode === "timed" || mode === "classroom") {
       content = (
         <FoopyGame
+          mode={mode}
           onExit={() => {
             setLeaveGuard(false);
+            setClassroomHomeAction(null);
             setMode("menu");
           }}
           onHome={handleHomeRequest}
           requestConfirm={requestConfirm}
           setLeaveGuard={setLeaveGuard}
+          onRegisterHomeAction={setClassroomHomeAction}
         />
       );
     } else if (mode === "battle-host") {
@@ -179,6 +188,10 @@ function App() {
           onTimedMode={() => {
             setLeaveGuard(false);
             setMode("timed");
+          }}
+          onClassroomMode={() => {
+            setLeaveGuard(false);
+            setMode("classroom");
           }}
           onBattleHost={() => {
             setLeaveGuard(false);

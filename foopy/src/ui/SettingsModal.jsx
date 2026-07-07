@@ -86,7 +86,8 @@ export default function SettingsModal({ user, onClose, onLogout }) {
 
 
     <p>
-      <strong>Version:</strong> v0.1.0<br />
+      <strong>Version:</strong> v0.1.1<br />
+      <strong>Updated:</strong> 07/07/2026<br />
       © Foopy
     </p>
   </>

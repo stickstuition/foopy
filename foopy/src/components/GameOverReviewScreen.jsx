@@ -6,12 +6,13 @@ export default function GameOverReviewScreen({
   score,
   history = [],
   coinsBefore = 0,
+  classroomMode = false,
   onPlayAgain,
   onChangeOptions
 }) {
   /* ---------- DERIVED STATS ---------- */
 
-  const coinsEarned = Math.max(0, Math.floor(score));
+  const coinsEarned = classroomMode ? 0 : Math.max(0, Math.floor(score));
   const coinsAfter = coinsBefore + coinsEarned;
 
   const correctCount = useMemo(
@@ -97,6 +98,12 @@ export default function GameOverReviewScreen({
             <div style={depositText}>+{coinsEarned} deposited</div>
           )}
         </div>
+
+        {classroomMode && (
+          <div style={classroomNotice}>
+            Classroom Mode scores are not submitted to the leaderboard.
+          </div>
+        )}
 
         {/* ---------- STATS ---------- */}
         <div style={statsRow}>
@@ -252,6 +259,18 @@ const depositText = {
   marginTop: 6,
   fontWeight: 700,
   color: "#2ecc71"
+};
+
+const classroomNotice = {
+  marginTop: -8,
+  marginBottom: 18,
+  padding: "10px 14px",
+  borderRadius: 10,
+  background: "#eeeeee",
+  color: "#222",
+  fontSize: 14,
+  fontWeight: 800,
+  textAlign: "center"
 };
 
 const statsRow = {

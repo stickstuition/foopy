@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import GamePanel from "./components/GamePanel";
 import { API_URL } from "./config/api";
 import FoopyGameLayoutMobile from "./FoopyGameLayoutMobile";
@@ -19,8 +19,15 @@ import { generateQuestion, validateAnswer } from "./engine/engine";
 
 import { useAuth } from "./auth/AuthContext";
 
-export default function FoopyGame({ onExit, onHome, setLeaveGuard }) {
+export default function FoopyGame({
+  mode = "timed",
+  onExit,
+  onHome,
+  setLeaveGuard,
+  onRegisterHomeAction
+}) {
   const { user, updateCoins, setUser } = useAuth();
+  const isClassroomMode = mode === "classroom";
 
 
   // Prevent double-awarding coins
@@ -50,6 +57,25 @@ const isMobile = useIsMobile(480);
   setLeaveGuard(gameState === "playing");
 }, [gameState, setLeaveGuard]);
 
+  const finishRound = useCallback(() => {
+    if (coinsBeforeRef.current === null) {
+      coinsBeforeRef.current = user?.coins ?? 0;
+    }
+
+    setGameState("gameover");
+  }, [user]);
+
+  useEffect(() => {
+    if (!isClassroomMode || gameState !== "playing") {
+      onRegisterHomeAction?.(null);
+      return;
+    }
+
+    onRegisterHomeAction?.(() => finishRound);
+
+    return () => onRegisterHomeAction?.(null);
+  }, [isClassroomMode, gameState, onRegisterHomeAction, finishRound]);
+
 
   function randomTeam() {
     if (!mods?.selectedTeams?.length) return null;
@@ -74,6 +100,7 @@ const isMobile = useIsMobile(480);
 
 useEffect(() => {
   if (gameState !== "playing") return;
+  if (isClassroomMode) return;
 
   const timer = setInterval(() => {
     setTime(t => {
@@ -94,7 +121,7 @@ useEffect(() => {
   }, 1000);
 
   return () => clearInterval(timer);
-}, [gameState, user]);
+}, [gameState, user, isClassroomMode]);
 
 /* ---------- QUESTION GENERATION ---------- */
 
@@ -168,10 +195,12 @@ function submitGuess(rawValue) {
   setScore(s => s + gained);
   setLastPoints(gained);
 
-  setTime(t => t + 4);
   setStatus("correct");
   setScoreFlash(true);
-  setTimeFlash(true);
+  if (!isClassroomMode) {
+    setTime(t => t + 4);
+    setTimeFlash(true);
+  }
 
   setTimeout(() => {
     setLastPoints(null);
@@ -247,6 +276,7 @@ const teamPlayers = pool[team];
 
 useEffect(() => {
   if (gameState !== "gameover") return;
+  if (isClassroomMode) return;
   if (!user) return;
   if (committedRunRef.current) return;
 
@@ -324,7 +354,7 @@ fetch(`${API_URL}/stats/commit-game`, {
       console.error("Commit failed", err);
       setCommitting(false);
     });
-}, [gameState, user, history, score, updateCoins, setUser]);
+}, [gameState, user, history, score, updateCoins, setUser, isClassroomMode]);
 
 
 
@@ -336,13 +366,14 @@ if (gameState === "gameover") {
         score={score}
         history={history}
         coinsBefore={coinsBeforeRef.current ?? 0}
+        classroomMode={isClassroomMode}
         committing={committing}
         onPlayAgain={() => {
           committedRunRef.current = false;
           coinsBeforeRef.current = null;
           setQuestion(null);
           setScore(0);
-          setTime(30);
+          setTime(isClassroomMode ? 0 : 30);
           setHistory([]);
           setInput("");
           setSuggestions([]);
@@ -372,7 +403,7 @@ if (gameState === "gameover") {
   setMods(config);
           setQuestion(null);
           setScore(0);
-          setTime(30);
+          setTime(isClassroomMode ? 0 : 30);
           setHistory([]);
           setInput("");
           setSuggestions([]);
@@ -470,11 +501,28 @@ if (gameState === "countdown") {
         resultFlash={status}
       />
 
-      <TimerCircle time={time} flash={timeFlash} />
+      {isClassroomMode ? (
+        <EndRoundButton onClick={finishRound} />
+      ) : (
+        <TimerCircle time={time} flash={timeFlash} />
+      )}
     </div>
   );
 
 
+}
+
+function EndRoundButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      title="End round"
+      onClick={onClick}
+      style={endRoundButton}
+    >
+      X
+    </button>
+  );
 }
 
 const gameContent = {
@@ -487,4 +535,21 @@ const gameContent = {
   flexDirection: "column",
   alignItems: "center",
   gap: 10
+};
+
+const endRoundButton = {
+  position: "absolute",
+  right: 24,
+  bottom: 24,
+  width: 64,
+  height: 64,
+  borderRadius: 10,
+  border: "none",
+  background: "#d81b24",
+  color: "#fff",
+  fontSize: 28,
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
+  zIndex: 20
 };

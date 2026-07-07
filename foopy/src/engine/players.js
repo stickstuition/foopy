@@ -3626,7 +3626,7 @@ const teams = {
     {
       "name": "Bailey J. WILLIAMS",
       "number": 32,
-      "image": "/players/WCE_baileyj.williams_32.png"
+      "image": "/players/WCE_bailey j.williams_32.png"
     },
     {
       "name": "Rhett BAZZO",

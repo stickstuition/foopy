@@ -6,7 +6,12 @@ import ProfileModal from "../components/profile/ProfileModal";
 import LeaderboardModal from "./LeaderboardModal";
 import useIsMobile from "../hooks/useIsMobile";
 
-export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
+export default function MainMenu({
+  onTimedMode,
+  onClassroomMode,
+  onBattleHost,
+  onBattleJoin
+}) {
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
@@ -50,7 +55,10 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
         />
 
         <div style={buttonStack}>
-          <MenuButton label="Timed Mode" onClick={onTimedMode} primary />
+          <div style={modeRow}>
+            <MenuButton label="Timed Mode" onClick={onTimedMode} primary />
+            <MenuButton label="Classroom Mode" onClick={onClassroomMode} grey />
+          </div>
           <MenuButton label="Host Game" onClick={onBattleHost} red />
           <MenuButton label="Join Game" onClick={onBattleJoin} red />
         </div>
@@ -63,7 +71,7 @@ export default function MainMenu({ onTimedMode, onBattleHost, onBattleJoin }) {
    COMPONENTS
    ========================================================= */
 
-function MenuButton({ label, onClick, red, primary }) {
+function MenuButton({ label, onClick, red, primary, grey }) {
   const [pressed, setPressed] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -87,6 +95,7 @@ function MenuButton({ label, onClick, red, primary }) {
         ...buttonBase,
         ...(primary && primaryStyle),
         ...(red && redStyle),
+        ...(grey && greyStyle),
         transform: pressed
           ? "translateY(2px)"
           : hovered
@@ -247,6 +256,13 @@ const buttonStack = {
   gap: 16
 };
 
+const modeRow = {
+  width: "100%",
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 16
+};
+
 const buttonBase = {
   width: "100%",
   height: 64,
@@ -271,6 +287,10 @@ const primaryStyle = {
 
 const redStyle = {
   background: "linear-gradient(to bottom, #ff6b6b, #c92a2a)"
+};
+
+const greyStyle = {
+  background: "linear-gradient(to bottom, #a7a7a7, #686868)"
 };
 
 const hud = (mobile, profileOpen) => ({

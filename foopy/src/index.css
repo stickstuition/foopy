@@ -12,6 +12,23 @@ html, body, #root {
   height: 100%;
 }
 
+@media (min-width: 481px) {
+  html,
+  body,
+  #root,
+  #game-panel-root {
+    overflow: hidden;
+  }
+
+  #game-panel-root {
+    scrollbar-width: none;
+  }
+
+  #game-panel-root::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
   html, body, #root {
     width: 100%;

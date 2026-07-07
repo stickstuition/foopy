@@ -1,8 +1,9 @@
 export const updates = {
   latest: [
-    "v0.2.0 Release",
-    "Mobile Stability Fixes",
-    "Players database is updated as of 11/03/2026",
+    "v0.1.1 - 07/07/2026",
+    "Added Classroom Mode: untimed practice with no leaderboard submission",
+    "Desktop game panel no longer shows the in-game scrollbar",
+    "Fixed Bailey J. Williams player image",
   ],
   coming: [
     "Expanded players for Online mode",
